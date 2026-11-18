@@ -1,6 +1,6 @@
 import sharp from 'sharp'
 import net from 'net'
-import { PDFDocument, PDFName } from 'pdf-lib'
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFStream } from 'pdf-lib'
 import { APIError } from 'payload'
 
 const sig = (b: Buffer) => {
@@ -33,14 +33,54 @@ async function clamScan(buf: Buffer) {
   if (!/OK\s*$/.test(reply.replace(/\0/g, ''))) throw new APIError('This file was rejected by the virus scanner.', 400)
 }
 
+/** Size limits per kind. The server also refuses any upload over MAX_UPLOAD_BYTES before it is read. */
+export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
+// PDF features that can run code or carry other files. A public document of the Fund needs none of them.
+const BAD_ACTIONS = new Set(['/JavaScript', '/Launch', '/ImportData', '/SubmitForm', '/GoToE', '/Rendition', '/RichMediaExecute'])
+const BAD_KEYS = ['JS', 'JavaScript', 'EmbeddedFiles', 'EmbeddedFile', 'XFA', 'RichMedia'].map((k) => PDFName.of(k))
+const S = PDFName.of('S'), TYPE = PDFName.of('Type')
+
+/** Returns the name of the first active feature found in the PDF, or '' if there is none. Checks every object, including compressed ones. */
+export function pdfActiveContent(pdf: PDFDocument): string {
+  const seen = new Set<unknown>()
+  const walk = (o: unknown, depth: number): string => {
+    if (!o || depth > 64 || seen.has(o)) return ''
+    seen.add(o)
+    if (o instanceof PDFStream) return walk(o.dict, depth + 1)
+    if (o instanceof PDFDict) {
+      for (const k of BAD_KEYS) if (o.has(k)) return k.asString()
+      const s = o.get(S), t = o.get(TYPE)
+      if (s instanceof PDFName && BAD_ACTIONS.has(s.asString())) return s.asString()
+      if (t instanceof PDFName && t.asString() === '/EmbeddedFile') return '/EmbeddedFile'
+      for (const [, v] of o.entries()) { const r = walk(v, depth + 1); if (r) return r }
+    } else if (o instanceof PDFArray) {
+      for (const v of o.asArray()) { const r = walk(v, depth + 1); if (r) return r }
+    }
+    return ''
+  }
+  for (const [, obj] of pdf.context.enumerateIndirectObjects()) { const r = walk(obj, 0); if (r) return r }
+  return ''
+}
+
 /** Check the file really is what it says, remove hidden metadata (GPS position, camera, author, software), and optionally virus-scan it. */
 export async function sanitizeUpload(file: { data: Buffer; mimetype: string; size: number; name: string }) {
   const kind = sig(file.data)
   if (!kind || kind !== file.mimetype) throw new APIError('The file content does not match its type. Only genuine JPEG, PNG, WebP, AVIF and PDF files are accepted.', 400)
+  const limit = kind === 'application/pdf' ? MAX_UPLOAD_BYTES : MAX_IMAGE_BYTES
+  if (file.data.length > limit) throw new APIError(`This file is too large. The limit is ${limit / 1024 / 1024} MB for ${kind === 'application/pdf' ? 'PDFs' : 'images'}.`, 413)
   await clamScan(file.data)
   if (kind === 'application/pdf') {
+    let pdf: PDFDocument
     try {
-      const pdf = await PDFDocument.load(file.data, { updateMetadata: false, ignoreEncryption: false })
+      pdf = await PDFDocument.load(file.data, { updateMetadata: false, ignoreEncryption: false })
+    } catch {
+      throw new APIError('This PDF could not be read. It may be damaged or password protected.', 400)
+    }
+    const active = pdfActiveContent(pdf)
+    if (active) throw new APIError(`This PDF contains active content (${active.slice(1)}) such as scripts, launch actions or attached files, which is not allowed on the website. Save or print it to a new PDF and upload that instead.`, 400)
+    try {
       pdf.setTitle(''); pdf.setAuthor(''); pdf.setSubject(''); pdf.setKeywords([]); pdf.setProducer('EDIF'); pdf.setCreator('EDIF')
       pdf.catalog.delete(PDFName.of('Metadata')) // XMP packet
       const out = Buffer.from(await pdf.save())

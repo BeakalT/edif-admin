@@ -35,6 +35,7 @@ import { Notices } from './collections/Notices'
 import { Messages } from './collections/Messages'
 import { PageViews } from './collections/PageViews'
 import { Subscribers } from './collections/Subscribers'
+import { MAX_UPLOAD_BYTES } from './lib/uploadSafety'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -92,6 +93,7 @@ export default buildConfig({
   db,
   sharp,
   graphQL: { disable: true }, // fewer public entry points
+  upload: { limits: { fileSize: MAX_UPLOAD_BYTES }, abortOnLimit: true, responseOnLimit: 'This file is too large. The limit is 20 MB.' },
   email: emailAdapter(),
   auth: { passwordHashIterations: 600000 }, // OWASP-recommended work factor for stored passwords
   csrf: [env.site], // only our own site may send cookie-authenticated requests
