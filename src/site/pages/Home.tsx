@@ -52,7 +52,7 @@ export default function Home() {
       <section className="section bg-ice" id="about">
         <div className="container">
           <div className="about">
-            <div><div className="photo"><img src={img('stage.jpg')} alt="Panel discussion at EDIF’s deposit insurance awareness and dialogue conference, Addis Ababa, March 2024" /></div></div>
+            <div><div className="photo"><img src={img('stage.jpg')} alt="Speaker at EDIF’s deposit insurance awareness and dialogue conference, Addis Ababa, March 2024" /></div></div>
             <div className="about-copy">
               <span className="eyebrow left">About EDIF</span>
               <h2 className="h2">Ethiopia’s <em>safety net</em> for every depositor</h2>

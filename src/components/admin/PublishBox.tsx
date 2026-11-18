@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import { useAuth, useDocumentInfo, PublishButton, SaveDraftButton } from '@payloadcms/ui'
+import { useAuth, useDocumentInfo, useFormModified, PublishButton, SaveDraftButton } from '@payloadcms/ui'
 
 /**
  * The WordPress "Publish" box: status, last change, then Preview / Save draft / Publish in one place at the
@@ -14,11 +14,13 @@ export const PublishBox: React.FC = () => {
   const st = data?._status === 'published' ? { t: 'Published', k: 'published' } : hasPublishedDoc ? { t: 'Published, with unpublished changes', k: 'changed' } : { t: 'Draft', k: 'draft' }
   const { user } = useAuth() as { user?: { role?: string } }
   const canPublish = ['admin', 'publisher'].includes(user?.role ?? '')
+  const modified = useFormModified()
   const when = data?.updatedAt ? new Date(data.updatedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
   const hasPreview = !!collectionSlug && ['pages', 'news', 'tenders', 'vacancies', 'events'].includes(collectionSlug)
   return (
     <section className="edif-publishbox" aria-label="Publish">
       <h3 className="edif-publishbox__h">Publish</h3>
+      {id && !canPublish && !modified && hasSavePermission !== false && data?._status !== 'published' ? <p className="edif-publishbox__saved" role="status">Saved as a draft. Visitors cannot see it until a Publisher approves it.</p> : null}
       <dl className="edif-publishbox__meta">
         <div><dt>Status</dt><dd>{id ? <span className={`edif-chip edif-chip--${st.k}`}>{st.t}</span> : 'New (not saved yet)'}</dd></div>
         {when && <div><dt>Last changed</dt><dd>{when}</dd></div>}

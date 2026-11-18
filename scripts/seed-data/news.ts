@@ -174,6 +174,25 @@ export const articles: Article[] = [
       'Participants asked the Fund to explain clearly how interest-free premiums are collected and invested, and encouraged it to keep up its pace of premium collection.',
     ],
   },
+  {
+    slug: 'edif-awareness-dialogue-conference-2024',
+    date: '2024-03-22',
+    kind: 'Event',
+    title: 'EDIF holds awareness and dialogue conference',
+    short: 'Explaining how deposit insurance protects depositors',
+    summary: 'The Fund brings member institutions and stakeholders together in Addis Ababa to explain what deposit insurance covers and how the Fund works.',
+    image: 'stage.jpg',
+    imageAlt: 'Speaker at EDIF’s deposit insurance awareness and dialogue conference, Addis Ababa, March 2024',
+    source: 'https://nbe.gov.et/nbe_news/edif-holds-awareness-dialogue-conference/',
+    body: [
+      'On 22 March 2024 the Ethiopian Deposit Insurance Fund held an awareness and dialogue conference at the Skylight Hotel in Addis Ababa. The news was first published by the National Bank of Ethiopia.',
+      'Solomon Desta, Vice Governor of the National Bank of Ethiopia and Chairman of the Fund’s Board, spoke about the Fund’s objectives and recent work. He explained that the Fund collects premiums from its member institutions and invests them to strengthen the Fund, which was set up under Council of Ministers Regulation No. 482/2021 to protect depositors and support the stability of the financial system.',
+      'Dr Desalegn Ambaw, the Fund’s Chief Executive Officer, explained how deposit insurance works. Current and checking accounts, savings accounts, time deposits, joint accounts and trust accounts are covered, up to Birr 100,000 per depositor at each institution if that institution fails.',
+      { h: 'The Fund at that date' },
+      { list: ['80 member institutions: 31 banks and 49 microfinance institutions.', 'Birr 2.8 billion in annual premiums contributed by member institutions as of December 2023.'] },
+      'The conference was part of the Fund’s effort to build public confidence in the deposit insurance system.',
+    ],
+  },
 ]
 
 export const fmtDate = (d: string) =>

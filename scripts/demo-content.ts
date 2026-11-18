@@ -26,6 +26,5 @@ if (!(await count('tenders'))) {
 }
 if (!(await count('vacancies'))) await payload.create({ collection: 'vacancies', draft: false, ...sys, data: { ...pub, title: 'Senior Risk Analyst', slug: 'senior-risk-analyst', department: 'Risk and Compliance', closingDate: day(14), summary: 'Analyse member institution risk and prepare reports.', details: rich(para(text('Bachelor’s degree and five years’ experience.'))), applyEmail: 'hr@edif.gov.et' } as any })
 if (!(await count('events'))) await payload.create({ collection: 'events', draft: false, ...sys, data: { ...pub, title: 'Depositor awareness workshop', slug: 'awareness-workshop', startsAt: day(30), venue: 'Addis Ababa', summary: 'A public workshop on how deposit protection works.' } as any })
-if (!(await count('notices'))) await payload.create({ collection: 'notices', draft: false, ...sys, data: { ...pub, message: 'Beware of fake messages asking for your bank details. The Fund never asks for passwords.', severity: 'warning', linkLabel: 'Read more', linkUrl: '/faq' } as any })
 console.log('demo content ready')
 process.exit(0)

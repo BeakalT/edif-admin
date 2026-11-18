@@ -5,6 +5,7 @@ import fs from 'fs'
 import path from 'path'
 import { seoHealth } from '../../lib/seoHealth'
 import { passedTwoFactor } from '../../lib/twoFactor'
+import { summarize } from '../../lib/auditSummary'
 
 const REVIEW = ['pages', 'news', 'publications', 'faqs', 'members', 'key-figures', 'tenders', 'vacancies', 'events', 'notices']
 const day = (n: number) => new Date(Date.now() + n * 864e5)
@@ -47,7 +48,7 @@ export default async function Dashboard(props: any) {
     role === 'admin' ? payload.find({ collection: 'users', ...sys, limit: 500 }).then((r: any) => ({ totalDocs: r.docs.filter((u: any) => !u.hasTotp).length })) : { totalDocs: 0 },
     ['admin', 'auditor'].includes(role) ? payload.count({ collection: 'audit-log', where: { and: [{ action: { equals: 'security' } }, { createdAt: { greater_than: day(-1).toISOString() } }] }, overrideAccess: true }) : { totalDocs: 0 },
     ['admin', 'publisher', 'auditor'].includes(role) ? payload.find({ collection: 'page-views', where: { day: { greater_than_equal: day(-6).toISOString().slice(0, 10) } }, ...sys, limit: 5000 }) : { docs: [] },
-    ['admin', 'auditor'].includes(role) ? payload.find({ collection: 'audit-log', sort: '-createdAt', ...sys, limit: 8 }) : { docs: [] },
+    ['admin', 'auditor'].includes(role) ? payload.find({ collection: 'audit-log', sort: '-createdAt', ...sys, limit: 40 }) : { docs: [] },
   ])
   const seo = ['admin', 'publisher', 'seo'].includes(role) ? await seoHealth(payload).catch(() => []) : []
   const byPath = new Map<string, number>(); let total = 0
@@ -121,11 +122,23 @@ export default async function Dashboard(props: any) {
         <>
           <h3 className="edif-dash__h">Recent activity</h3>
           <section className="edif-tile" style={{ minHeight: 0 }}>
-            <ul className="edif-feed">{(recent as any).docs.map((e: any) => <li key={e.id}><span>{e.actor} · {e.action} · {e.resource}{e.documentTitle ? ` · ${e.documentTitle}` : ''}<small>{new Date(e.createdAt).toLocaleString('en-GB')}</small></span></li>)}</ul>
+            <ul className="edif-feed">{groupActivity((recent as any).docs).slice(0, 8).map((g) => <li key={g.id}><span>{g.text}{g.count > 1 ? ` (${g.count} times)` : ''}<small>{new Date(g.at).toLocaleString('en-GB')}</small></span></li>)}</ul>
             <a href={adminUrl('/collections/audit-log')} style={{ marginTop: 6 }}>Full activity log</a>
           </section>
         </>
       )}
     </div>
   )
+}
+
+/** Plain sentences for the dashboard: the audit log's own summary, with identical neighbouring rows collapsed into one line. */
+function groupActivity(docs: any[]): { id: string | number; text: string; at: string; count: number }[] {
+  const out: { id: string | number; text: string; at: string; count: number }[] = []
+  for (const e of docs) {
+    const text: string = e.summary || summarize(e)
+    const last = out[out.length - 1]
+    if (last && last.text === text) last.count++
+    else out.push({ id: e.id, text, at: e.createdAt, count: 1 })
+  }
+  return out
 }

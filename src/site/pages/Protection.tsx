@@ -255,7 +255,7 @@ export function Payout() {
             <span className="eyebrow left">Step by step</span>
             <h2 className="h2">The payout <em>in detail</em></h2>
             <p className="lead">Every stage has a deadline in law, so depositors know when to expect their money.</p>
-            <div className="callout"><Bank /><p><strong>Where you are paid.</strong> The pay-agent bank is chosen for its wide branch network across Ethiopia, its strong financial position and its administrative capacity.</p></div>
+            <div className="callout"><Bank /><p><strong>Where you are paid.</strong> The pay-agent bank is chosen for its wide branch network across Ethiopia. Beware of fake messages asking for your bank details: the Fund never asks for passwords.</p></div>
           </div>
           <ol className="timeline">
             {tl.map((s, i) => (
