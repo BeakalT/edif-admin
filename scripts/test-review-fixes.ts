@@ -30,6 +30,16 @@ await allowed('G-02 plain unpublish still works', () => payload.update({ collect
 const after: any = await payload.findByID({ collection: 'news', id: n.id, draft: true, overrideAccess: true })
 check('G-02 summary is unchanged after all that', after.summary === 'Original summary text.', after.summary)
 
+// F-01: a Publisher's own saved draft must not go live through trash/restore or unpublish
+const f: any = await payload.create({ collection: 'news', draft: true, data: { title: 'F01 test ' + tag, slug: 'f01-' + tag, kind: 'Announcement', date: new Date().toISOString(), summary: 'Live text.' } as any, ...as(U.editor), context: { draftSave: true } })
+await payload.update({ collection: 'news', id: f.id, data: { _status: 'published' } as any, ...as(U.publisher) })
+await payload.update({ collection: 'news', id: f.id, draft: true, data: { summary: 'My own unreviewed draft.' } as any, ...as(U.publisher2), context: { draftSave: true } })
+await allowed('F-01 plain trash', () => payload.update({ collection: 'news', id: f.id, data: { deletedAt: new Date().toISOString() } as any, ...as(U.publisher2), trash: true }))
+await allowed('F-01 plain restore', () => payload.update({ collection: 'news', id: f.id, data: { deletedAt: null } as any, ...as(U.publisher2), trash: true }))
+const live: any = await payload.findByID({ collection: 'news', id: f.id, draft: false, overrideAccess: true })
+check('F-01 trash and restore did not put the Publisher\'s own draft live', live.summary === 'Live text.', live.summary)
+await payload.delete({ collection: 'news', id: f.id, overrideAccess: true, context: { seeding: true } }).catch(() => null)
+
 // G-07: SEO Manager edits search fields on news, not the article
 await payload.update({ collection: 'news', id: n.id, draft: true, data: { summary: 'Rewritten by SEO.', seo: { title: 'Better search title' } } as any, ...as(U.seo), context: { draftSave: true } })
 const s7: any = await payload.findByID({ collection: 'news', id: n.id, draft: true, overrideAccess: true })
@@ -42,9 +52,10 @@ check('G-06 Editor cannot add custom HTML or CSS on a new page', !pg.layout?.[0]
 
 // G-08: redirects
 await refused('G-08 protocol-relative target is refused', () => payload.create({ collection: 'redirects', data: { from: '/old-a-' + tag, to: '//evil.example' } as any, ...as(U.seo) }), /must be a page path/)
-await refused('G-08 Editor cannot redirect to another website', () => payload.create({ collection: 'redirects', data: { from: '/old-b-' + tag, to: 'https://example.org/' } as any, ...as(U.editor) }), /another website/)
+await refused('G-08 Editor cannot redirect to another website', () => payload.create({ collection: 'redirects', data: { from: '/old-b-' + tag, to: 'https://example.org/' } as any, ...as(U.editor) }), /Super Admin/)
 await allowed('G-08 Editor can still redirect within the site', () => payload.create({ collection: 'redirects', data: { from: '/old-c-' + tag, to: '/about' } as any, ...as(U.editor) }))
-await allowed('G-08 SEO Manager can redirect to another website', () => payload.create({ collection: 'redirects', data: { from: '/old-d-' + tag, to: 'https://example.org/' } as any, ...as(U.seo) }))
+await refused('F-03 SEO Manager cannot redirect to another website', () => payload.create({ collection: 'redirects', data: { from: '/old-d-' + tag, to: 'https://example.org/' } as any, ...as(U.seo) }), /Super Admin/)
+await allowed('F-03 Super Admin can redirect to another website', () => payload.create({ collection: 'redirects', data: { from: '/old-e-' + tag, to: 'https://example.org/' } as any, ...as(U.admin) }))
 
 // G-04: link fields
 // drafts skip validation in Payload; the check applies when content is published, and the site drops bad links regardless

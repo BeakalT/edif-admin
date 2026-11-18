@@ -8,6 +8,7 @@ import { CountUp, spotlight, useInView } from './motion'
 import { useCms } from '../cms-context'
 import { tel } from '../data/content'
 import { FaqList } from './sections'
+import { safeHref } from '../../lib/safeUrl'
 
 /**
  * Design sections whose text, numbers, images and links are edited in the admin.
@@ -18,10 +19,10 @@ type Btn = { label: string; url: string; style?: string }
 const T = (a?: { text: string }[]) => (a || []).map((x) => x.text)
 const ext = (u: string) => /^(https?:|mailto:|tel:)/.test(u)
 const Button = ({ b }: { b: Btn }) => {
-  const cls = 'btn btn--' + (b.style || 'navy')
-  return ext(b.url) ? <a className={cls} href={b.url}>{b.label}</a> : <Link className={cls} to={b.url}>{b.label} <Arrow /></Link>
+  const cls = 'btn btn--' + (b.style || 'navy'), url = safeHref(b.url) || '#'
+  return ext(url) ? <a className={cls} href={url}>{b.label}</a> : <Link className={cls} to={url}>{b.label} <Arrow /></Link>
 }
-const Buttons = ({ list }: { list?: Btn[] }) => (list?.length ? <div className="btn-row">{list.map((b, i) => (b.style === 'link' ? <TLink key={i} to={b.url}>{b.label}</TLink> : <Button key={i} b={b} />))}</div> : null)
+const Buttons = ({ list }: { list?: Btn[] }) => (list?.length ? <div className="btn-row">{list.map((b, i) => (b.style === 'link' ? <TLink key={i} to={safeHref(b.url) || '#'}>{b.label}</TLink> : <Button key={i} b={b} />))}</div> : null)
 const Em = ({ title, em }: { title?: string; em?: string }) => <>{title}{em ? <> <em>{em}</em></> : null}</>
 
 function Count({ to, suffix = '' }: { to: number; suffix?: string }) {

@@ -95,7 +95,7 @@ export default async function Dashboard(props: any) {
         </Tile>
         {staffOnly && <Tile n={(msgs as any).totalDocs} label="New contact messages" tone={(msgs as any).totalDocs ? 'alert' : undefined}><a href={adminUrl('/collections/messages')}>Open the inbox</a></Tile>}
         <Tile n={tenders.docs.length + vacs.docs.length} label="Closing within 14 days" tone={tenders.docs.length + vacs.docs.length ? 'alert' : undefined}>
-          <ul>{tenders.docs.map((t: any) => <li key={t.id}><a href={adminUrl(`/collections/tenders/${t.id}`)}>{t.title}</a></li>)}{vacs.docs.map((t: any) => <li key={t.id}><a href={adminUrl(`/collections/vacancies/${t.id}`)}>{t.title}</a></li>)}</ul>
+          <ul>{tenders.docs.map((t: any) => <li key={t.id}><a href={adminUrl(`/collections/tenders/${t.id}`)}>Tender · {t.title}</a>{t.closingDate ? ` · closes ${new Date(t.closingDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}</li>)}{vacs.docs.map((t: any) => <li key={t.id}><a href={adminUrl(`/collections/vacancies/${t.id}`)}>Vacancy · {t.title}</a>{t.closingDate ? ` · closes ${new Date(t.closingDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}</li>)}</ul>
         </Tile>
         <Tile n={jobs.docs.length} label="Scheduled to publish or unpublish">
           <ul>{jobs.docs.slice(0, 4).map((j: any) => <li key={j.id}>{j.input?.type || 'publish'} · {j.waitUntil ? new Date(j.waitUntil).toLocaleString('en-GB') : 'soon'}</li>)}</ul>
@@ -109,7 +109,7 @@ export default async function Dashboard(props: any) {
         )}
         {['admin', 'publisher', 'seo'].includes(role) && (
           <Tile n={seo.length} label="Search (SEO) checks" tone={seo.length ? 'alert' : 'ok'} sub={seo.length ? undefined : 'No problems found.'}>
-            {!!seo.length && <ul>{seo.slice(0, 3).map((i, k) => <li key={k}><a href={i.link}>{i.text}</a></li>)}{seo.length > 3 && <li className="edif-more">and {seo.length - 3} more</li>}</ul>}
+            {!!seo.length && <ul>{seo.slice(0, 3).map((i, k) => <li key={k}><a href={i.link}>{i.text}</a></li>)}{seo.length > 3 && <li className="edif-more"><a href={adminUrl('/collections/seo-pages')}>and {seo.length - 3} more: open Page search settings</a></li>}</ul>}
           </Tile>
         )}
         {role === 'admin' && <Tile n={(noTotp as any).totalDocs} label="Accounts without two-factor" tone={(noTotp as any).totalDocs ? 'alert' : 'ok'} sub="They must set it up at next sign-in." />}

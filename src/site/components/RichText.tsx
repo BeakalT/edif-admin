@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
+import { safeHref } from '../../lib/safeUrl'
 
 /** Renders Lexical rich text from the CMS, keeping bold, italic, links, lists, numbered lists, quotes, headings and images. */
-const safeUrl = (u?: string) => (u && /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(u.trim()) ? u.trim() : '#')
+const safeUrl = (u?: string) => safeHref(u) || '#'
 
 function leaf(n: any, key: number): ReactNode {
   let el: ReactNode = n.text

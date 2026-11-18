@@ -1,5 +1,6 @@
 import type { Block, Field, FieldAccess } from 'payload'
 import { hasRole } from '../access'
+import { validateLink } from '../lib/safeUrl'
 import { band, homeHero, nextLinks, pageHero, sectionBlock, withLabel } from './design'
 
 /** Settings every section has: where links can jump to it, its background, spacing, and a switch to hide it without deleting it. */
@@ -19,7 +20,7 @@ const superAdminOnly = { create: superAdminField, update: superAdminField }
 
 const link = [
   { name: 'label', type: 'text', required: true },
-  { name: 'url', type: 'text', required: true, admin: { description: 'Page path such as /about/governance, or a full web address.' } },
+  { name: 'url', type: 'text', required: true, validate: validateLink, admin: { description: 'Page path such as /about/governance, or a full web address.' } },
 ] as const
 
 const base: Block[] = [
@@ -32,7 +33,7 @@ const base: Block[] = [
   { slug: 'cards', labels: { singular: 'Cards', plural: 'Card grids' }, fields: [
     { name: 'heading', type: 'text' },
     { name: 'columns', type: 'select', defaultValue: '3', options: ['2', '3', '4'] },
-    { name: 'items', type: 'array', minRows: 1, fields: [{ name: 'title', type: 'text', required: true }, { name: 'text', type: 'textarea' }, { name: 'image', type: 'upload', relationTo: 'media' }, { name: 'linkLabel', type: 'text' }, { name: 'linkUrl', type: 'text' }] },
+    { name: 'items', type: 'array', minRows: 1, fields: [{ name: 'title', type: 'text', required: true }, { name: 'text', type: 'textarea' }, { name: 'image', type: 'upload', relationTo: 'media' }, { name: 'linkLabel', type: 'text' }, { name: 'linkUrl', type: 'text', validate: validateLink }] },
   ] },
   { slug: 'figures', labels: { singular: 'Key figures', plural: 'Key figure rows' }, fields: [
     { name: 'heading', type: 'text' },

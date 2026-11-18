@@ -5,6 +5,7 @@ import { Arrow, Curves, SecHead, TLink } from './ui'
 import * as P from './Parts'
 import type { Cms } from '../cms-context'
 import { cleanHtml, scopeCss } from '../../lib/customCode'
+import { safeHref } from '../../lib/safeUrl'
 
 const im = (m: any) => (m && typeof m === 'object' && m.url ? { src: m.url as string, alt: m.alt as string } : null)
 const figs = (cms: Cms) => cms.figures as any
@@ -46,7 +47,7 @@ type B = Record<string, any> & { blockType: string; id?: string }
 const src = (m: any) => (m && typeof m === 'object' ? m.url : undefined)
 const alt = (m: any, fb = '') => (m && typeof m === 'object' ? m.alt || fb : fb)
 const isExt = (u: string) => /^https?:\/\//i.test(u)
-const safe = (u?: string) => (u && /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(u.trim()) ? u.trim() : '#')
+const safe = (u?: string) => safeHref(u) || '#'
 const Anchor = ({ url, children, className }: { url: string; children: React.ReactNode; className?: string }) =>
   isExt(url) ? <a className={className} href={safe(url)} target="_blank" rel="noopener noreferrer">{children}</a> : <Link className={className} to={safe(url)}>{children}</Link>
 

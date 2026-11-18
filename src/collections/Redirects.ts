@@ -16,8 +16,8 @@ export const Redirects: CollectionConfig = {
       if (to && data) {
         const local = /^\/(?![/\\])/.test(to), external = /^https:\/\/[^\s/\\@]+(\/|$)/i.test(to)
         if (!local && !external || /[\s\\]/.test(to)) throw new APIError('"To" must be a page path such as /about, or a full address starting with https://', 400)
-        // pointing visitors away from the Fund's domain is a bigger decision than moving a page, so Editors cannot do it
-        if (external && !hasRole(req.user, 'admin', 'publisher', 'seo')) throw new APIError('Only a Publisher, SEO Manager or Super Admin can redirect to another website.', 403)
+        // pointing visitors away from the Fund's domain is a bigger decision than moving a page, so only a Super Admin can do it
+        if (external && !hasRole(req.user, 'admin')) throw new APIError('Only a Super Admin can redirect to another website.', 403)
         data.to = to
       }
       if (data?.from && data?.from === data?.to) throw new APIError('A redirect cannot point to itself.', 400)

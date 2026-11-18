@@ -61,6 +61,14 @@ const guardPublish: CollectionBeforeChangeHook = async ({ data, req, collection,
       const { deletedAt: _skip, ...rest } = data
       const latest = await req.payload.findByID({ collection: collection.slug as CollectionSlug, id: originalDoc.id, draft: true, overrideAccess: true, depth: 0, trash: true })
       if (changedContent(rest, latest)) throw new APIError(COMBINED, 400)
+      // Payload merges the latest DRAFT into the data of a non-draft save. Trash then restore would therefore put a
+      // Publisher's own unreviewed draft live. Write the LIVE content back instead, so these steps change nothing but the trash flag.
+      const live = (await req.payload.findByID({ collection: collection.slug as CollectionSlug, id: originalDoc.id, draft: false, overrideAccess: true, depth: 0, trash: true })) as unknown as Record<string, unknown>
+      for (const k of Object.keys(data)) {
+        if (META.has(k) || k === 'deletedAt') continue
+        if (live[k] === undefined) delete data[k]
+        else data[k] = live[k]
+      }
     }
     return data
   }

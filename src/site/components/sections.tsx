@@ -163,7 +163,7 @@ export function NewsCard({ a }: { a: Article }) {
             ? <strong>2024/25<em>Annual Report</em></strong>
             : a.kind === 'Results'
               ? <strong>Birr 5.2bn<em>in nine months</em></strong>
-              : <strong>On air<em>Addis Gebeya</em></strong>}
+              : <strong>{a.kind}</strong>}
         </div>
       )}
       <div className="body">

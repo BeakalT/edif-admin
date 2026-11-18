@@ -1,18 +1,19 @@
 import type { Block, Field } from 'payload'
+import { validateLink } from '../lib/safeUrl'
 
 const t = (name: string, extra: Record<string, unknown> = {}): Field => ({ name, type: 'text', ...extra }) as Field
 const ta = (name: string, extra: Record<string, unknown> = {}): Field => ({ name, type: 'textarea', ...extra }) as Field
 const lines = (name: string, label: string): Field => ({ name, type: 'array', label, fields: [{ name: 'text', type: 'textarea', required: true }] })
 const btns = (name = 'buttons'): Field => ({ name, type: 'array', label: 'Buttons and links', maxRows: 4, fields: [
   { name: 'label', type: 'text', required: true },
-  { name: 'url', type: 'text', required: true, admin: { description: 'Page path such as /members, or a full web address.' } },
+  { name: 'url', type: 'text', required: true, validate: validateLink, admin: { description: 'Page path such as /members, or a full web address.' } },
   { name: 'style', type: 'select', defaultValue: 'navy', options: [{ label: 'Gold button', value: 'gold' }, { label: 'Navy button', value: 'navy' }, { label: 'Outline (on dark)', value: 'outline-light' }, { label: 'Text link', value: 'link' }] },
 ] })
 const image = (name = 'image'): Field => ({ name, type: 'upload', relationTo: 'media' })
-const link = (p: string): Field[] => [t(p + 'Label'), t(p + 'Url')]
+const link = (p: string): Field[] => [t(p + 'Label'), t(p + 'Url', { validate: validateLink })]
 
 export const homeHero: Block = { slug: 'homeHero', labels: { singular: 'Home page hero', plural: 'Home page heroes' }, fields: [
-  t('title', { required: true }), t('tagline'), ta('intro'), image(), lines('partners', 'Small badges under the intro'), btns(),
+  t('title', { required: true }), t('tagline'), ta('intro'), image(), { ...lines('partners', 'Lines under the intro'), labels: { singular: 'Badge', plural: 'Badges' } } as Field, btns(),
   { name: 'ledger', type: 'array', label: 'Counters', maxRows: 4, admin: { description: 'The animated numbers. In text use {banks}, {mfis} and {total} for live member counts.' }, fields: [
     { name: 'mode', type: 'select', defaultValue: 'number', options: [{ label: 'Fixed number', value: 'number' }, { label: 'Live count of member institutions', value: 'members' }] },
     { name: 'value', type: 'number' }, t('prefix', { admin: { description: 'Small text before the number, e.g. Birr' } }), t('suffix', { admin: { description: 'e.g. %' } }),
