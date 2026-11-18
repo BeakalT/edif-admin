@@ -143,3 +143,51 @@ Suggested fix: Add `security.txt` with a monitored address and an expiry date, a
 - The Docker runner uses a non-root user, tini, a healthcheck, and no secrets in the image. `NEXT_PUBLIC_` is only the newsletter on/off flag.
 - Trash, restore and unpublish write the published document back, so a Publisher cannot smuggle a draft live that way. Scheduled publish still runs as the user through the guard.
 - The audit log cannot be updated or deleted through access rules. Password fields are omitted from diffs. Exports of the log are limited to Admin and Auditor and are themselves logged.
+
+## Reply to Claude's notes
+
+18 Nov 2026. Answers only. Nothing else in the tree was changed for this reply.
+
+### 1. G-10, hops left at 0
+
+Do not leave production on 0. With `TRUSTED_PROXY_HOPS=0` and no `CLIENT_IP_HEADER`, `clientIpFrom` returns the string `direct` for every request (`src/lib/clientIp.ts`). The login rule in `src/proxy.ts` then has one bucket for the whole internet: 12 POSTs in 15 minutes to `/api/users/login`, `/api/verify-totp` and `/api/remove-totp` together. Those three paths share one counter, and a successful sign-in counts the same as a failure. One person signing in is two POSTs (password, then the code). Six people in one morning fill the bucket. Anyone on the internet can also fill it and stop every staff sign-in.
+
+A warning in `src/lib/env.ts` is how this ships misconfigured. The safe default against a forged `X-Forwarded-For` is right. The shared bucket is not an acceptable production behaviour. Refuse to start in production when both `TRUSTED_PROXY_HOPS` and `CLIENT_IP_HEADER` are unset, the same way a missing `PAYLOAD_SECRET` already stops the app. Local development can keep 0. Before launch, set the hop count to the real number of proxies in front of the app.
+
+### 2. G-11, `logFailedCodes`
+
+The wrapper does what its test says. `payload-totp` `verifyToken` returns JSON `{ ok: false }` for a bad code, a missing session, a bad body, and for the attempt-count refusal in `codeAttempts.js` (that refusal is `{ message, ok: false }`, not a different status). When `req.user` is set, those verify failures are written. The lock path is covered.
+
+What it does not see:
+
+- `POST /api/setup-totp` and `POST /api/remove-totp` return the same `{ ok: false }` shape (`setSecret.js`, `remove.js`) and are not wrapped. A wrong code while enrolling, or while turning the authenticator off, is not in the audit log. `forceSetup: true` makes the enrol path one every new account uses.
+- A response that is not JSON is skipped. This plugin's refusals are JSON, so that is not a current hole.
+- The audit line does not say whether the code was wrong or the account was already refused. One line for both is enough if setup and remove are added.
+
+Extend the same wrapper to `setup-totp` and `remove-totp`. No new finding number.
+
+### 3. G-12, smallest change, no CAPTCHA
+
+Keep the 15-minute account lock, and do not add a CAPTCHA. Two small changes:
+
+- Do not let five fast guesses from anywhere lock the person out. Count failures per account, and make each next attempt wait longer (about 1s, then 2s, 4s, 8s, capped) before the 15-minute lock applies. Five tries then cannot take the account offline, and a guesser cannot spray quickly. The delay has to live in the database, not in memory, or a second app instance forgets it.
+- Split the proxy buckets. Password, verify, and remove must not share one count of 12, and a successful sign-in must not count. With hops at 0 this split does not help, which is why question 1 comes first.
+
+Runbook: yes. Keep at least two Super Admin accounts. Unlock stays Super Admin only, so if every Super Admin is locked, nobody in the panel can unlock until the 15 minutes pass. Write down the server command that clears `lockUntil` (and the `totp-attempts` row, because a code lock is stored there as well as on the user) and name who may run it. An office allow-list is not a fix.
+
+### 4. G-05, exact file address
+
+The names are not random. Payload stores `getSanitizedUploadFilename(file.name)` and, on a clash, `getSafeFileName` (`node_modules/payload/dist/uploads/generateFileData.js`). A file uploaded as `board-minutes.pdf` is fetched at `/api/media/file/board-minutes.pdf`. Image sizes add predictable names (`card`, `share`). Listing the library needs a passed second factor. Fetching the file does not.
+
+That is acceptable for the first month only for images that are meant for published pages. It is not acceptable, before launch, for a PDF or an image that is still a draft and whose name is the title of the document. Do not upload tender packs, unpublished minutes, or draft news files until a download is allowed only when a published page, news item, or document points at it. Do that check for PDFs before launch. Images can follow in the first month if a test proves a published page still loads its pictures, because a wrong check will break the public site.
+
+### 5. G-14, allow-list in CI
+
+Yes. Fail the job on any new high or critical advisory. Keep an allow-list of the named advisories you have already accepted (the current high ones are happy-dom, lexical, and the Payload path that pulls them in), each with a date it must be looked at again, 90 days at most. Delete the `|| true`. A new advisory that is not on the list fails the build.
+
+### Decisions you passed on
+
+- Payout page. Agreed. One sentence, a pay-agent bank with a wide branch network, is what the page should say.
+- Scam warning. Agreed that the site-wide banner is gone, and that the payout page and the FAQ carry the warning. S-02 is not closed by that. `Notices` still has `selfPublish: true` and `linkUrl` still accepts any `https` address (`src/collections/Notices.ts`), so the next banner a Publisher saves alone can point depositors at a lookalike site. Either a second person still approves a notice, or a notice link stays on this site.
+- Colours. Agreed. Navy, gold, and blue only.
+- Crowd, rules, and ticker restored. Agreed. The client asked for them back. No security issue, and I am not asking for them to be removed again.
