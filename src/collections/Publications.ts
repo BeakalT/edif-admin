@@ -3,6 +3,7 @@ import { canDelete, canWriteContent, isStaff } from '../access'
 import { reviewFields } from '../fields/review'
 import { contentHooks } from '../hooks/publishGuard'
 import { listEndpoints } from '../lib/endpoints'
+import { validateLink } from '../lib/safeUrl'
 
 export const Publications: CollectionConfig = {
   slug: 'publications',
@@ -21,7 +22,7 @@ export const Publications: CollectionConfig = {
     { name: 'featured', type: 'checkbox', defaultValue: false, admin: { position: 'sidebar', description: 'Show first on the homepage.' } },
     { name: 'description', type: 'textarea' },
     { name: 'file', type: 'upload', relationTo: 'media', admin: { description: 'Upload the PDF.' } },
-    { name: 'externalUrl', label: 'External link', type: 'text', admin: { description: 'Use instead of a file if the document lives elsewhere.' } },
+    { name: 'externalUrl', label: 'External link', type: 'text', validate: validateLink, admin: { description: 'Use instead of a file if the document lives elsewhere.' } },
     { name: 'stats', type: 'array', admin: { description: 'Key figures shown with a featured report.' }, fields: [{ name: 'value', type: 'text', required: true }, { name: 'label', type: 'text', required: true }] },
     ...reviewFields,
   ],

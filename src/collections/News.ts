@@ -3,6 +3,7 @@ import { canDelete, canWriteContent, isStaff, hasRole } from '../access'
 import { seoField } from '../fields/seo'
 import { reviewFields } from '../fields/review'
 import { contentHooks } from '../hooks/publishGuard'
+import { validateLink } from '../lib/safeUrl'
 
 export const News: CollectionConfig = {
   slug: 'news',
@@ -29,8 +30,8 @@ export const News: CollectionConfig = {
     { name: 'body', type: 'richText' },
     { name: 'gallery', type: 'array', admin: { description: 'Extra photos shown under the article.' }, fields: [{ name: 'image', type: 'upload', relationTo: 'media', required: true }, { name: 'alt', type: 'text', required: true, admin: { description: 'Describe the photo for visually impaired readers.' } }] },
     { name: 'pdf', type: 'upload', relationTo: 'media', label: 'Attached PDF' },
-    { name: 'externalPdf', label: 'PDF link', type: 'text', admin: { description: 'Link to a PDF hosted elsewhere. Use the upload above for new files.' } },
-    { name: 'sourceUrl', label: 'Source link', type: 'text', admin: { position: 'sidebar' } },
+    { name: 'externalPdf', label: 'PDF link', type: 'text', validate: validateLink, admin: { description: 'Link to a PDF hosted elsewhere. Use the upload above for new files.' } },
+    { name: 'sourceUrl', label: 'Source link', type: 'text', validate: validateLink, admin: { position: 'sidebar' } },
     seoField,
     ...reviewFields,
   ],

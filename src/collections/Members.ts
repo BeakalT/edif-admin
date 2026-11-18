@@ -3,6 +3,7 @@ import { canDelete, canWriteContent, isStaff } from '../access'
 import { reviewFields } from '../fields/review'
 import { contentHooks } from '../hooks/publishGuard'
 import { listEndpoints } from '../lib/endpoints'
+import { validateWebsite } from '../lib/safeUrl'
 
 export const Members: CollectionConfig = {
   slug: 'members',
@@ -21,7 +22,7 @@ export const Members: CollectionConfig = {
     { name: 'type', type: 'select', required: true, options: [{ label: 'Bank', value: 'bank' }, { label: 'Microfinance institution', value: 'microfinance' }], admin: { position: 'sidebar' } },
     { name: 'phone', type: 'text' },
     { name: 'email', type: 'email' },
-    { name: 'website', type: 'text' },
+    { name: 'website', type: 'text', validate: validateWebsite },
     { name: 'location', type: 'text' },
     ...reviewFields,
   ],

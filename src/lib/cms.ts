@@ -6,6 +6,7 @@ import type { Contact, Doc, Faq } from '../site/data/content'
 import type { Article } from '../site/data/news'
 import type { Member } from '../site/data/members'
 import type { Cms, NavItem } from '../site/cms-context'
+import { safeHref, webAddress } from './safeUrl'
 
 /** Used only until an admin fills in Site settings. */
 const FALLBACK_CONTACT = { email: 'ediinfo@edif.gov.et', phones: ['+251 115 57 60 15', '+251 115 57 15 97', '+251 115 57 85 34'], poBox: '4735', address: ['Zemen Bank building, 22nd floor', 'Sengatera, Addis Ababa, Ethiopia'] }
@@ -45,21 +46,21 @@ export const getCms = cache(async (): Promise<Cms> => {
     payload.find({ collection: 'notices', where: live, sort: '-updatedAt', limit: 1, ...sys }),
     payload.find({ collection: 'key-figures', where: live, ...sys }),
   ])
-  const item = (n: any): NavItem => ({ label: n.label, url: n.url, description: n.description || undefined, children: n.children?.length ? n.children.map(item) : undefined })
+  const item = (n: any): NavItem => ({ label: n.label, url: safeHref(n.url) || '#', description: n.description || undefined, children: n.children?.length ? n.children.map(item) : undefined })
   const figures = Object.fromEntries(figs.docs.map((f) => [f.key, { label: f.label, value: f.value, numeric: f.numeric ?? undefined, note: f.note || undefined, source: f.source, asOf: day(f.asOf) }]))
   const nt: any = notices.docs[0]
   const articles: Article[] = news.docs.map((a) => ({
     slug: a.slug, date: day(a.date), kind: a.kind as Article['kind'], title: a.title, short: a.short || a.title, summary: a.summary,
     image: url(a.image), imageAlt: a.image && typeof a.image === 'object' ? (a.image.alt || a.title) : undefined,
     gallery: a.gallery?.map((g) => ({ src: url(g.image) || '', alt: g.alt })),
-    body: toBlocks(a.body), rich: a.body, pdf: url(a.pdf) || a.externalPdf || undefined, source: a.sourceUrl || '',
+    body: toBlocks(a.body), rich: a.body, pdf: url(a.pdf) || safeHref(a.externalPdf), source: safeHref(a.sourceUrl) || '',
   }))
   const docs: Doc[] = pubs.docs.map((d) => ({
     kind: d.kind as Doc['kind'], title: d.title, desc: d.description || '', date: monthLabel(d.date), sortKey: day(d.date),
-    url: url(d.file) || d.externalUrl || '#', featured: !!d.featured, stats: d.stats?.length ? d.stats.map((s) => ({ v: s.value, l: s.label })) : undefined,
+    url: url(d.file) || safeHref(d.externalUrl) || '#', featured: !!d.featured, stats: d.stats?.length ? d.stats.map((s) => ({ v: s.value, l: s.label })) : undefined,
   }))
   const faqList: Faq[] = faqs.docs.map((f) => ({ q: f.question, a: f.answer, cat: f.category as Faq['cat'], home: !!f.showOnHome }))
-  const member = (t: string): Member[] => members.docs.filter((m) => m.type === t).map((m) => ({ name: m.name, phone: m.phone || '', email: m.email || '', website: m.website || '', location: m.location || '' }))
+  const member = (t: string): Member[] => members.docs.filter((m) => m.type === t).map((m) => ({ name: m.name, phone: m.phone || '', email: m.email || '', website: webAddress(m.website) || '', location: m.location || '' }))
   // A brand-new environment has no Site settings yet; fall back to the published contact details so the footer never breaks.
   const phones = (settings.phones || []).map((p) => p.number).filter(Boolean), address = (settings.address || []).map((l) => l.line).filter(Boolean)
   const contact: Contact = {
@@ -71,9 +72,9 @@ export const getCms = cache(async (): Promise<Cms> => {
   return {
     nav: nav.main?.length ? nav.main.map(item) : undefined,
     footerNav: nav.footer?.length ? nav.footer.map((c: any) => ({ heading: c.heading, links: (c.links || []).map(item) })) : undefined,
-    headerCta: nav.cta?.label && nav.cta?.url ? { label: nav.cta.label, url: nav.cta.url } : undefined,
+    headerCta: nav.cta?.label && safeHref(nav.cta?.url) ? { label: nav.cta.label, url: safeHref(nav.cta.url)! } : undefined,
     logo: { color: url(theme.logo), white: url(theme.logoWhite), wordmark: theme.wordmark || 'EDIF', textOnly: !!theme.useTextLogo } as any,
-    notice: nt ? { message: nt.message, severity: nt.severity, linkLabel: nt.linkLabel || undefined, linkUrl: nt.linkUrl || undefined, expiresAt: nt.expiresAt || undefined } : null,
+    notice: nt ? { message: nt.message, severity: nt.severity, linkLabel: nt.linkLabel || undefined, linkUrl: safeHref(nt.linkUrl), expiresAt: nt.expiresAt || undefined } : null,
     figures,
     articles, docs, faqs: faqList, banks: member('bank'), microfinance: member('microfinance'), contact }
 })
