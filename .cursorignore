@@ -1,0 +1,12 @@
+# Keep secrets and demo data away from the AI
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+media/
+outbox/
+data/
+backups/
+scripts/.test-users.json
+.next/

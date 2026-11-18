@@ -1,0 +1,38 @@
+# Local, production-like stack: the app + PostgreSQL + an S3-compatible store (MinIO) + a mail catcher.
+#   cp .env.example .env.production   (fill it in)    →    docker compose up --build
+# This is for rehearsal. A real deployment uses managed PostgreSQL and object storage (see RUNBOOKS.md).
+services:
+  migrate:
+    build: { context: ., target: migrator }
+    env_file: .env.production
+    depends_on: { db: { condition: service_healthy } }
+    restart: "no"
+  web:
+    build: .
+    ports: ["3000:3000"]
+    env_file: .env.production
+    volumes: ["web-data:/app/data"]
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ["/tmp"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+  db:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: edif, POSTGRES_PASSWORD: change-me-locally, POSTGRES_DB: edif }
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U edif"], interval: 5s, timeout: 3s, retries: 10 }
+    restart: unless-stopped
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment: { MINIO_ROOT_USER: edifminio, MINIO_ROOT_PASSWORD: change-me-locally }
+    volumes: ["minio:/data"]
+    ports: ["9001:9001"]
+  mail:
+    image: axllent/mailpit
+    ports: ["8025:8025"]
+volumes: { pgdata: {}, minio: {}, web-data: {} }

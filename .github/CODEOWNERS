@@ -1,0 +1,11 @@
+# Changes to these paths need a second reviewer (security-critical).
+/src/access/            @edif-platform-owners
+/src/hooks/publishGuard.ts @edif-platform-owners
+/src/collections/Users.ts  @edif-platform-owners
+/src/lib/customCode.ts  @edif-platform-owners
+/src/lib/uploadSafety.ts @edif-platform-owners
+/src/lib/clientIp.ts    @edif-platform-owners
+/src/proxy.ts           @edif-platform-owners
+/next.config.ts         @edif-platform-owners
+/Dockerfile             @edif-platform-owners
+/.github/               @edif-platform-owners
