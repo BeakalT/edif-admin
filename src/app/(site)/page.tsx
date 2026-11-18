@@ -1,6 +1,7 @@
 import Home from '../../site/pages/Home'
 import { SITE_URL, getCms } from '../../lib/cms'
 import { CmsPage, cmsMetadata } from '../../site/components/CmsPage'
+import { jsonLd } from '../../lib/jsonLd'
 
 export const generateMetadata = () => cmsMetadata('/')
 
@@ -13,7 +14,7 @@ export default async function Page() {
   }
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(org) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(org) }} />
       <CmsPage path="/"><Home /></CmsPage>
     </>
   )
