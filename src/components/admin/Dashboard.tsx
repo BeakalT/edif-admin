@@ -4,6 +4,7 @@ import React from 'react'
 import fs from 'fs'
 import path from 'path'
 import { seoHealth } from '../../lib/seoHealth'
+import { passedTwoFactor } from '../../lib/twoFactor'
 
 const REVIEW = ['pages', 'news', 'publications', 'faqs', 'members', 'key-figures', 'tenders', 'vacancies', 'events', 'notices']
 const day = (n: number) => new Date(Date.now() + n * 864e5)
@@ -23,6 +24,8 @@ const addrHour = () => (new Date().getUTCHours() + 3) % 24 // Addis Ababa is UTC
 
 export default async function Dashboard(props: any) {
   const { payload, user } = props
+  // The dashboard renders right after the password step, before the redirect to the code screen. It reads with access overridden, so show nothing until two-factor is done.
+  if (!passedTwoFactor(payload, user)) return null
   const role = user?.role
   const sys = { overrideAccess: true as const, depth: 0, limit: 50, pagination: false as const }
   const staffOnly = ['admin', 'publisher'].includes(role)

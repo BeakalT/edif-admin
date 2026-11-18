@@ -8,18 +8,20 @@ import { Blocks } from '@/site/components/Blocks'
 import { DetailPage } from '@/site/components/Listing'
 import { PageHero } from '@/site/components/ui'
 import { RichText } from '@/site/components/RichText'
+import { passedTwoFactor } from '@/lib/twoFactor'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Preview', robots: { index: false, follow: false } }
 const ALLOWED = ['pages', 'news', 'tenders', 'vacancies', 'events']
 
-/** Shows the latest saved draft exactly as visitors will see it. Only signed-in staff can open it. */
+/** Shows the latest saved draft exactly as visitors will see it. Only signed-in staff who have passed two-factor can open it. */
 export default async function Page({ params }: { params: Promise<{ collection: string; id: string }> }) {
   const { collection, id } = await params
   if (!ALLOWED.includes(collection)) notFound()
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: await headers() })
   if (!user || !['admin', 'publisher', 'editor', 'seo', 'auditor'].includes((user as any).role)) notFound()
+  if (!passedTwoFactor(payload, user)) notFound() // a password alone must not show drafts
   const doc: any = await payload.findByID({ collection: collection as any, id, draft: true, depth: 1, overrideAccess: true }).catch(() => null)
   if (!doc) notFound()
   const bar = <div className="notice notice--warning" role="status"><div className="container"><p>Preview of the latest draft. Visitors cannot see this page{doc._status === 'published' ? ' until the changes are published' : ' until it is published'}.</p></div></div>
