@@ -5,20 +5,22 @@ import { withAudit } from '../hooks/audit'
 import { adminOnlyDelete } from '../hooks/publishGuard'
 import { sanitizeUpload } from '../lib/uploadSafety'
 import { guardMediaDelete, guardMediaTrash } from '../hooks/mediaGuard'
+import { passedTwoFactor } from '../lib/twoFactor'
 
 export const Media: CollectionConfig = {
   slug: 'media',
   admin: { group: 'Content', description: 'Images and PDF documents' },
   access: {
-    // Files are public once uploaded (the website links to them); only signed-in staff can upload.
-    read: () => true,
+    // Visitors may download a file by its exact address (the website links to them), but only signed-in staff
+    // may list or search the library, so files that no published page links to yet cannot be discovered.
+    read: ({ req, isReadingStaticFile }: any) => isReadingStaticFile === true || passedTwoFactor(req.payload, req.user),
     create: ({ req }) => hasRole(req.user, 'admin', 'publisher', 'editor', 'seo'),
     update: canWriteContent,
     delete: canDelete,
   },
   hooks: { ...withAudit, beforeOperation: [async ({ req, operation }: any) => { if ((operation === 'create' || operation === 'update') && req.file?.data && !ctxOf(req)?.seeding) await sanitizeUpload(req.file) }], beforeDelete: [adminOnlyDelete, guardMediaDelete], beforeChange: [guardMediaTrash] },
   trash: true,
-  custom: { totp: { disableAccessWrapper: { read: true } } }, // images and PDFs are public by design
+  custom: { totp: { disableAccessWrapper: { read: true } } }, // file downloads are public by design; listing is checked in read above
   upload: {
     mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'application/pdf'],
     imageSizes: [
