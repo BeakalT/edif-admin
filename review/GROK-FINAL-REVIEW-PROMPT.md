@@ -45,6 +45,20 @@ Look for problems that would hurt those people, for example:
 
 Report UI and UX issues as U-01, U-02 and so on, each with: page or component, what is wrong, who it affects, and a concrete fix. Severity: High (stops a task or misleads), Medium (slows people down), Low (polish).
 
+## Part E: make the design feel human
+The owner wants the site to feel made by people, for people, and not like a generated template. Judge it as a skeptical visitor would: a depositor who is worried about their money, a bank officer, a journalist.
+
+Look at the public site (and the admin sign-in) and answer honestly:
+1. **First impression.** In five seconds, does it feel like a real public institution that cares, or like a generic corporate or AI-made layout? Name the specific things that give it away (repeated card grids, identical icon circles, stock-style gradients, evenly weighted sections, symmetrical everything, vague hero lines).
+2. **Copy and tone.** Find sentences that sound machine-written or bureaucratic: abstract nouns, "empowering", "robust", "seamless", three-part lists, headlines that say nothing. Quote the text, say where it is, and rewrite it in plain, warm, concrete language a depositor would use. The tone should be calm, direct and reassuring, never salesy. No Amharic content is wanted.
+3. **Visual rhythm.** Where is the page monotonous? Suggest where scale, whitespace, a stronger photo, a single large number or a different layout would give the page a point of view. Say what to remove as well as what to add.
+4. **People and place.** Where could real photographs, real names and roles, real office or Ethiopian context replace decoration? (Only suggest photos EDIF can legitimately supply. Do not suggest copying photos of named people from the web.)
+5. **Moments of care.** Empty states, error messages, form confirmations, the 404 page, loading states, the coverage calculator result. Which feel cold, and what would a helpful person say instead?
+6. **Trust signals.** Does the site show who is behind it, how to verify it (official contacts, legal basis, the Proclamation), and when content was last updated? What is missing that a worried depositor would look for?
+7. **Restraint.** List what to leave alone: parts of the design that already work and should not be changed.
+
+Report each as H-01, H-02 and so on, with: page or component, what feels impersonal, who notices, and a concrete change (new wording, layout change or element to remove). Give severity as High (hurts trust or comprehension), Medium or Low. For any wording change, give the exact replacement text. Do not edit files; propose only. Keep suggestions realistic for a small team and compatible with the existing design system (colours, type, spacing in `src/site/styles/`).
+
 ## Output format for `review/grok-final-findings.md`
 Start with a **fix verification table**: ID, your verdict (Fixed / Partly fixed / Not fixed / Regressed), one-line reason.
 
@@ -61,6 +75,6 @@ Exploit or failure scenario: …
 Suggested fix: …
 ```
 
-Then the UI and UX findings (U-01 …).
+Then the UI and UX findings (U-01 …), then the "make it human" findings (H-01 …), then a short ranked list of the ten changes that would most improve how human the site feels.
 
 End with **Areas checked with no issues**, one line each.
