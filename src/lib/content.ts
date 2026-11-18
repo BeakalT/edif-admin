@@ -8,10 +8,16 @@ const live = { _status: { equals: 'published' } }
 const P = () => getPayload({ config })
 export const SITE = SITE_URL
 
-export const getPage = cached('page', async (path: string) => (await (await P()).find({ collection: 'pages', where: { and: [live, { path: { equals: path } }] }, limit: 1, ...sys, pagination: undefined as any })).docs[0])
+// Lookups keyed by an address the visitor typed only reach the cache when that address exists, so requests
+// for random URLs cannot fill the cache. The lists of existing addresses are small and cached as one entry each.
+const loadPagePaths = cached('page-paths', async () => (await (await P()).find({ collection: 'pages', where: live, ...sys, depth: 0 })).docs.map((d) => d.path as string))
+const loadPage = cached('page', async (path: string) => (await (await P()).find({ collection: 'pages', where: { and: [live, { path: { equals: path } }] }, limit: 1, ...sys, pagination: undefined as any })).docs[0])
+export const getPage = async (path: string) => ((await loadPagePaths()).includes(path) ? loadPage(path) : undefined)
 export const getPeople = cached('people', async () => (await (await P()).find({ collection: 'people', where: live, sort: 'sort', ...sys })).docs)
 export const getList = cached('list', async (collection: 'tenders' | 'vacancies' | 'events', sort: string) => (await (await P()).find({ collection, where: live, sort, ...sys })).docs as any[])
-export const getOne = cached('one', async (collection: 'tenders' | 'vacancies' | 'events', slug: string) => (await (await P()).find({ collection, where: { and: [live, { slug: { equals: slug } }] }, limit: 1, ...sys, pagination: undefined as any })).docs[0] as any)
+const loadSlugs = cached('slugs', async (collection: 'tenders' | 'vacancies' | 'events') => (await (await P()).find({ collection, where: live, ...sys, depth: 0 })).docs.map((d) => (d as { slug: string }).slug))
+const loadOne = cached('one', async (collection: 'tenders' | 'vacancies' | 'events', slug: string) => (await (await P()).find({ collection, where: { and: [live, { slug: { equals: slug } }] }, limit: 1, ...sys, pagination: undefined as any })).docs[0] as any)
+export const getOne = async (collection: 'tenders' | 'vacancies' | 'events', slug: string) => ((await loadSlugs(collection)).includes(slug) ? loadOne(collection, slug) : undefined)
 
 export const fmt = (d?: string | null, time = false) => d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', ...(time ? { hour: '2-digit', minute: '2-digit' } : {}), timeZone: 'Africa/Addis_Ababa' }) : ''
 export const isClosed = (d?: string | null) => !!d && new Date(d).getTime() < Date.now()

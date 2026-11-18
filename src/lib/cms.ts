@@ -92,17 +92,23 @@ const loadSeo = cached('seo', async (path: string) => {
 })
 export const getSeo = cache((path: string) => loadSeo(path))
 
-export const getRedirect = cached('redirect', async (path: string) => {
+// All redirects as one cached list, so a lookup for a random address does not add a cache entry.
+const loadRedirects = cached('redirects', async () => {
   const payload = await getPayload({ config })
-  const r = await payload.find({ collection: 'redirects', where: { from: { equals: path } }, limit: 1, ...sys })
-  return r.docs[0]
+  return (await payload.find({ collection: 'redirects', ...sys, depth: 0 })).docs
 })
+export const getRedirect = async (path: string) => (await loadRedirects()).find((r) => r.from === path)
 
-export const getNewsDoc = cached('news-doc', async (slug: string) => {
+const loadNewsSlugs = cached('news-slugs', async () => {
+  const payload = await getPayload({ config })
+  return (await payload.find({ collection: 'news', where: live, ...sys, depth: 0 })).docs.map((d) => d.slug)
+})
+const loadNewsDoc = cached('news-doc', async (slug: string) => {
   const payload = await getPayload({ config })
   const r = await payload.find({ collection: 'news', where: { and: [live, { slug: { equals: slug } }] }, limit: 1, ...sys })
   return r.docs[0]
 })
+export const getNewsDoc = async (slug: string) => ((await loadNewsSlugs()).includes(slug) ? loadNewsDoc(slug) : undefined)
 
 export const getSitemapData = async () => {
   const payload = await getPayload({ config })
