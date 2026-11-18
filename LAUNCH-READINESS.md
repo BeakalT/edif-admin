@@ -7,7 +7,7 @@ Status as of 14 November 2026. **Done** = built and verified by a test listed in
 |---|---|---|
 | Production database: PostgreSQL with versioned migrations (no auto schema change in production) | P0 | Migration applied to a clean PostgreSQL 16; all database, API and browser suites pass on it |
 | App refuses to start with a missing/weak secret, non-https site URL or no SMTP in production | P0 | `tests/unit/env.test.ts` |
-| Visitor address cannot be forged to dodge rate limits | P0 | `tests/unit/clientIp.test.ts`; browser test sends forged headers and is still rate limited |
+| Visitor address cannot be forged to dodge rate limits (**only when `TRUSTED_PROXY_HOPS` matches the real proxy setup**, see D) | P0 | `tests/unit/clientIp.test.ts`; browser test sends forged headers and is still rate limited |
 | Configurable, non-obvious admin address; nothing hardcodes `/admin` | P0 | `tests/unit/adminRoute.test.ts`; robots.txt, emails, dashboard and rate limits read one setting |
 | Health (`/healthz`) and readiness (`/readyz`) endpoints | P0 | `tests/e2e/security.spec.ts` |
 | Release flow: build with no database content, refresh from the live database before traffic (`/internal/revalidate`, `post-deploy.mjs`) | P0 | Run against a bundle built from an empty database: news list went from 0 to 16 items; wrong/missing token rejected (401) |
@@ -49,3 +49,15 @@ Status as of 14 November 2026. **Done** = built and verified by a test listed in
 | Dependency advisories: 3 high remain, all inside Payload's rich-text chain (`happy-dom`, `lexical`) | P1 | Not reachable from our inputs as used today, but update Payload when it ships fixes; CI blocks on critical |
 | Authenticator keys are stored unencrypted in the database | P1 | Mitigated by database access control and encrypted backups; consider field encryption |
 | Premiums figure on the site (Birr 7.34bn) | P0 | **Verified 15 Nov 2026** against the Annual Report 2024/25 (pp. 9, 21): 6.48bn conventional + 650.26m interest-free + 212.32m initial premiums = 7.34bn. Captions now name the initial premiums |
+
+## D. Independent review (Grok 4.7 in Cursor, 18 Nov 2026)
+Findings are in `review/grok-findings.md`. Each one was checked against the code. Fixed items are separate commits named "Fix G-xx". These items remain open:
+
+| Item | P | Status |
+|---|---|---|
+| G-03/G-04 follow-up: remove `'unsafe-inline'` from the production CSP `script-src` (needs a nonce through Next.js and the Payload admin) | P0 | Open. The two injection paths found are fixed. This removes the safety net that let them run |
+| G-05 follow-up: files attached only to unpublished drafts can be downloaded by anyone who knows the exact filename | P1 | Open. Listing is now staff-only. Full fix: serve files only when a published document uses them |
+| G-10: set `TRUSTED_PROXY_HOPS` (or `CLIENT_IP_HEADER`) to match the real proxy in front of the app, and make sure the app cannot be reached around that proxy | P0 | Open, deployment step. X-Real-IP is no longer trusted by default |
+| G-11 follow-up: log failed authenticator codes (wrong code after a correct password) | P1 | Open. Needs a hook around the two-factor plugin's verify step |
+| G-12: knowing a staff email is enough to lock that account for 15 minutes | P1 | **Decision.** Options: CAPTCHA or proof-of-work on sign-in after a failure, a per-account backoff, or a separate admin hostname restricted at the network (already decision 2, which mostly removes this) |
+| G-14: high-severity dependency advisories do not fail CI | P1 | Already a recorded decision above (Payload's rich-text chain). Revisit when Payload ships fixes |
