@@ -30,7 +30,7 @@ One Next.js app serves both the public site `(site)` and the admin `(payload)`. 
 - **Pages are pre-rendered at build** from a throwaway empty database, then refreshed from the real database by `scripts/post-deploy.mjs` before traffic is switched. See RUNBOOKS → Release.
 
 ## Known limits (be aware)
-- Page caching is per instance. Run **one** web instance (or add a CDN purge / shared cache handler) before scaling out; otherwise visitors may see different versions for up to the revalidate window.
+- Pages render per visit (each carries a fresh CSP nonce, set in `src/proxy.ts`), so HTML is not cached at a CDN. Published content is cached in the app (`src/lib/siteCache.ts`, tag `site-content`) and cleared on every change. That cache is per instance: run **one** web instance (or add a shared cache handler) before scaling out, otherwise an instance may show content up to an hour old.
 - Rate limits are per instance (in memory). The CDN/WAF must also rate-limit sign-in endpoints.
 - `data/maintenance.json` (maintenance switch) lives on the instance's volume.
 - Stats beacon is first-party and anonymous; it is not a full analytics product.

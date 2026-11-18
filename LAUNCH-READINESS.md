@@ -55,7 +55,7 @@ Findings are in `review/grok-findings.md`. Each one was checked against the code
 
 | Item | P | Status |
 |---|---|---|
-| G-03/G-04 follow-up: remove `'unsafe-inline'` from the production CSP `script-src` (needs a nonce through Next.js and the Payload admin) | P0 | Open. The two injection paths found are fixed. This removes the safety net that let them run |
+| G-03/G-04 follow-up: remove `'unsafe-inline'` from the production CSP `script-src` | P0 | **Done 18 Nov.** Per-visit nonce with `'strict-dynamic'` on the site and the admin (`src/proxy.ts`). Pages now render per visit; published content is cached across visits and cleared on every change (`src/lib/siteCache.ts`), ~7–19 ms per page. Verified: every executable script carries the nonce; API and database suites pass. `tests/e2e/security.spec.ts` checks the header, a fresh nonce per visit, no CSP violations on site and admin pages, and that an injected script does not run |
 | G-05 follow-up: files attached only to unpublished drafts can be downloaded by anyone who knows the exact filename | P1 | Open. Listing is now staff-only. Full fix: serve files only when a published document uses them |
 | G-10: set `TRUSTED_PROXY_HOPS` (or `CLIENT_IP_HEADER`) to match the real proxy in front of the app, and make sure the app cannot be reached around that proxy | P0 | Open, deployment step. X-Real-IP is no longer trusted by default |
 | G-11 follow-up: log failed authenticator codes (wrong code after a correct password) | P1 | Open. Needs a hook around the two-factor plugin's verify step |

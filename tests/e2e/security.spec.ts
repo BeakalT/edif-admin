@@ -16,6 +16,11 @@ test('security headers on the public site', async ({ request }) => {
   expect(h['permissions-policy']).toContain('camera=()')
   expect(h['strict-transport-security']).toContain('max-age=')
   expect(h['content-security-policy']).toContain("object-src 'none'")
+  // scripts are allowed by a per-visit nonce, never by 'unsafe-inline'
+  const scriptSrc = (h['content-security-policy'] || '').split(';').find((d) => d.trim().startsWith('script-src')) || ''
+  expect(scriptSrc).toMatch(/'nonce-[A-Za-z0-9+/=]{16,}'/)
+  expect(scriptSrc).not.toContain('unsafe-inline')
+  expect(scriptSrc).not.toContain('unsafe-eval')
   expect(h['x-powered-by']).toBeUndefined()
 })
 
@@ -47,4 +52,34 @@ test('unknown pages return a real 404 with the site layout', async ({ page }) =>
   const r = await page.goto('/this-page-does-not-exist-xyz')
   expect(r?.status()).toBe(404)
   await expect(page.locator('header')).toBeVisible()
+})
+
+test('the nonce changes on every visit', async ({ request }) => {
+  const nonce = async () => ((await request.get('/')).headers()['content-security-policy'] || '').match(/'nonce-([^']+)'/)?.[1]
+  const [a, b] = [await nonce(), await nonce()]
+  expect(a).toBeTruthy()
+  expect(a).not.toBe(b)
+})
+
+test('the strict policy blocks nothing the site and admin need, and blocks injected script', async ({ page }) => {
+  const violations: string[] = []
+  page.on('console', (m) => { if (/Content Security Policy|Refused to (execute|load)/i.test(m.text())) violations.push(m.text()) })
+  page.on('pageerror', (e) => violations.push('page error: ' + e.message))
+  const admin = '/' + (process.env.ADMIN_PATH || '/admin').replace(/^\/+|\/+$/g, '')
+  for (const path of ['/', '/about', '/news', '/deposit-protection/calculator', '/contact', '/search?q=deposit', admin + '/login']) {
+    await page.goto(path, { waitUntil: 'networkidle' })
+    // the page is interactive: React hydrated and its client code ran
+    expect(await page.evaluate(() => document.readyState)).toBe('complete')
+  }
+  expect(violations, violations.join('\n')).toEqual([])
+  // a script injected without the nonce must not run
+  await page.goto('/')
+  const ran = await page.evaluate(() => new Promise<boolean>((done) => {
+    const w = window as unknown as { __injected?: boolean }
+    w.__injected = false
+    const s = document.createElement('script'); s.textContent = 'window.__injected = true'
+    document.body.appendChild(s)
+    setTimeout(() => done(w.__injected === true), 300)
+  }))
+  expect(ran).toBe(false)
 })

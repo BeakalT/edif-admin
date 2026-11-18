@@ -8,7 +8,9 @@ import { CmsProvider } from '../../site/cms-context'
 import { SITE_URL, getCms } from '../../lib/cms'
 import { getThemeCss } from '../../lib/theme'
 
-export const revalidate = 3600 // safety net; publishing in the admin refreshes pages within seconds
+// Every page is rendered per visit so it can carry that visit's CSP nonce (see src/proxy.ts).
+// The content itself is cached in lib/cms.ts and refreshed whenever something is published.
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

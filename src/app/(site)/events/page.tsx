@@ -1,4 +1,3 @@
-export const revalidate = 300
 import { ListPage, fmt } from '@/site/components/Listing'
 import { getList } from '@/lib/content'
 import { toMetadata } from '@/lib/seo'

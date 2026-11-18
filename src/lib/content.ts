@@ -1,16 +1,17 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { SITE_URL } from './cms'
+import { cached } from './siteCache'
 
 const sys = { overrideAccess: true as const, depth: 1, draft: false, pagination: false as const }
 const live = { _status: { equals: 'published' } }
 const P = () => getPayload({ config })
 export const SITE = SITE_URL
 
-export const getPage = async (path: string) => (await (await P()).find({ collection: 'pages', where: { and: [live, { path: { equals: path } }] }, limit: 1, ...sys, pagination: undefined as any })).docs[0]
-export const getPeople = async () => (await (await P()).find({ collection: 'people', where: live, sort: 'sort', ...sys })).docs
-export const getList = async (collection: 'tenders' | 'vacancies' | 'events', sort: string) => (await (await P()).find({ collection, where: live, sort, ...sys })).docs as any[]
-export const getOne = async (collection: 'tenders' | 'vacancies' | 'events', slug: string) => (await (await P()).find({ collection, where: { and: [live, { slug: { equals: slug } }] }, limit: 1, ...sys, pagination: undefined as any })).docs[0] as any
+export const getPage = cached('page', async (path: string) => (await (await P()).find({ collection: 'pages', where: { and: [live, { path: { equals: path } }] }, limit: 1, ...sys, pagination: undefined as any })).docs[0])
+export const getPeople = cached('people', async () => (await (await P()).find({ collection: 'people', where: live, sort: 'sort', ...sys })).docs)
+export const getList = cached('list', async (collection: 'tenders' | 'vacancies' | 'events', sort: string) => (await (await P()).find({ collection, where: live, sort, ...sys })).docs as any[])
+export const getOne = cached('one', async (collection: 'tenders' | 'vacancies' | 'events', slug: string) => (await (await P()).find({ collection, where: { and: [live, { slug: { equals: slug } }] }, limit: 1, ...sys, pagination: undefined as any })).docs[0] as any)
 
 export const fmt = (d?: string | null, time = false) => d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', ...(time ? { hour: '2-digit', minute: '2-digit' } : {}), timeZone: 'Africa/Addis_Ababa' }) : ''
 export const isClosed = (d?: string | null) => !!d && new Date(d).getTime() < Date.now()

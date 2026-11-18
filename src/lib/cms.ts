@@ -7,6 +7,7 @@ import type { Article } from '../site/data/news'
 import type { Member } from '../site/data/members'
 import type { Cms, NavItem } from '../site/cms-context'
 import { safeHref, webAddress } from './safeUrl'
+import { cached } from './siteCache'
 
 /** Used only until an admin fills in Site settings. */
 const FALLBACK_CONTACT = { email: 'ediinfo@edif.gov.et', phones: ['+251 115 57 60 15', '+251 115 57 15 97', '+251 115 57 85 34'], poBox: '4735', address: ['Zemen Bank building, 22nd floor', 'Sengatera, Addis Ababa, Ethiopia'] }
@@ -33,7 +34,7 @@ export function toBlocks(state: any): Article['body'] {
   return out
 }
 
-export const getCms = cache(async (): Promise<Cms> => {
+const loadCms = cached('cms', async (): Promise<Cms> => {
   const payload = await getPayload({ config })
   const [news, pubs, faqs, members, settings, nav, theme, notices, figs] = await Promise.all([
     payload.find({ collection: 'news', where: live, sort: '-date', ...sys }),
@@ -78,8 +79,10 @@ export const getCms = cache(async (): Promise<Cms> => {
     figures,
     articles, docs, faqs: faqList, banks: member('bank'), microfinance: member('microfinance'), contact }
 })
+/** Everything the site layout needs, read once per visit from the cross-visit cache. */
+export const getCms = cache(() => loadCms())
 
-export const getSeo = cache(async (path: string) => {
+const loadSeo = cached('seo', async (path: string) => {
   const payload = await getPayload({ config })
   const [page, settings] = await Promise.all([
     payload.find({ collection: 'seo-pages', where: { path: { equals: path } }, limit: 1, ...sys }),
@@ -87,18 +90,19 @@ export const getSeo = cache(async (path: string) => {
   ])
   return { page: page.docs[0], defaults: settings.defaultSeo }
 })
+export const getSeo = cache((path: string) => loadSeo(path))
 
-export const getRedirect = async (path: string) => {
+export const getRedirect = cached('redirect', async (path: string) => {
   const payload = await getPayload({ config })
   const r = await payload.find({ collection: 'redirects', where: { from: { equals: path } }, limit: 1, ...sys })
   return r.docs[0]
-}
+})
 
-export const getNewsDoc = async (slug: string) => {
+export const getNewsDoc = cached('news-doc', async (slug: string) => {
   const payload = await getPayload({ config })
   const r = await payload.find({ collection: 'news', where: { and: [live, { slug: { equals: slug } }] }, limit: 1, ...sys })
   return r.docs[0]
-}
+})
 
 export const getSitemapData = async () => {
   const payload = await getPayload({ config })
