@@ -11,7 +11,8 @@ export async function POST(req: Request) {
   const ip = clientIpFrom((n) => req.headers.get(n))
   const now = Date.now()
   const arr = (recent.get(ip) || []).filter((t) => now - t < 60_000); arr.push(now); recent.set(ip, arr)
-  if (recent.size > 5000) recent.clear()
+  // drop the oldest visitors rather than everyone, so flooding with new addresses cannot reset other visitors' limits
+  if (recent.size > 5000) for (const k of [...recent.keys()].slice(0, recent.size - 4000)) recent.delete(k)
   if (arr.length > 40) return new Response(null, { status: 429 })
   let path = ''
   try { path = String((await req.json()).path || '') } catch { return new Response(null, { status: 400 }) }

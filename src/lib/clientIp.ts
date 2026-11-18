@@ -4,7 +4,8 @@
  * Anyone can send their own X-Forwarded-For header, so the LEFT side of that list is untrusted.
  * Our own proxy / CDN appends the real address on the RIGHT. TRUSTED_PROXY_HOPS says how many of
  * our proxies sit in front of the app (default 1); the address that many places from the right is the visitor.
- * If the CDN supplies a single trusted header (e.g. cf-connecting-ip), set CLIENT_IP_HEADER to its name instead.
+ * If the CDN or proxy supplies a single trusted header (e.g. cf-connecting-ip, or x-real-ip from nginx), set CLIENT_IP_HEADER to its name instead.
+ * TRUSTED_PROXY_HOPS must match the real number of proxies: if the app is reachable directly, a visitor can fill the header themselves.
  * With TRUSTED_PROXY_HOPS=0 no header is believed and every visitor shares one bucket ("direct").
  */
 type Get = (name: string) => string | null | undefined
@@ -19,6 +20,7 @@ export function clientIpFrom(get: Get): string {
   if (hops === 0) return 'direct'
   const xff = (get('x-forwarded-for') || '').split(',').map((s) => s.trim()).filter(Boolean)
   if (xff.length >= hops) return xff[xff.length - hops]
-  if (xff.length === 0) return get('x-real-ip')?.trim() || 'unknown'
+  // X-Real-IP is only believed when named in CLIENT_IP_HEADER: without a proxy that overwrites it, the visitor can set it.
+  if (xff.length === 0) return 'unknown'
   return xff[0]
 }
