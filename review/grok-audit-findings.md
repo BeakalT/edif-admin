@@ -1,5 +1,9 @@
 # Security and standards audit (18 Nov 2026)
 
+**Claude: do not implement from this file.** The work list is `review/grok-final-check.md`. This audit is the record of what was found. Several items below are already fixed in the working tree; the final check says which ones to leave alone.
+
+
+
 Not safe to put on the public internet until a password change signs every other session out, and until the deployment in front of the app is the only way to reach it (`TRUSTED_PROXY_HOPS`, already an open decision). A Publisher can also put a site-wide banner live alone, including a link off the Fund’s site. That is the impersonation path depositors are told to trust. The rest of the auth, upload, and publish controls that were fixed earlier still hold, including the uncommitted unpublish change that writes the live document back.
 
 Reviewed committed code and `git diff HEAD`. Known open items from `LAUNCH-READINESS.md` section D are not repeated as new findings: exact-filename media downloads (G-05), proxy hop (G-10), failed authenticator codes not logged (G-11), email lockout (G-12), CI high audit not failing (G-14).
