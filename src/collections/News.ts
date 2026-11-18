@@ -1,9 +1,14 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Field } from 'payload'
 import { canDelete, canWriteContent, isStaff, hasRole } from '../access'
 import { seoField } from '../fields/seo'
 import { reviewFields } from '../fields/review'
 import { contentHooks } from '../hooks/publishGuard'
 import { validateLink } from '../lib/safeUrl'
+
+// SEO Managers can open news to edit the search fields, but not the article itself.
+const CONTENT_ROLES = ({ req }: any) => hasRole(req.user, 'admin', 'publisher', 'editor')
+const OPEN_TO_SEO = new Set(['seo', 'reviewStatus', 'reviewNote', 'lastEditor'])
+const lockForSeo = (f: any): Field => (f.name && !OPEN_TO_SEO.has(f.name) && !f.access ? { ...f, access: { update: CONTENT_ROLES } } : f)
 
 export const News: CollectionConfig = {
   slug: 'news',
@@ -19,7 +24,7 @@ export const News: CollectionConfig = {
   versions: { drafts: { schedulePublish: true }, maxPerDoc: 0 },
   trash: true,
   hooks: contentHooks,
-  fields: [
+  fields: ([
     { name: 'title', type: 'text', required: true, access: { update: ({ req }) => hasRole(req.user, 'admin', 'publisher', 'editor') } },
     { name: 'slug', type: 'text', required: true, unique: true, index: true, admin: { position: 'sidebar', description: 'Web address, lowercase with hyphens.' }, access: { update: ({ req }) => hasRole(req.user, 'admin', 'publisher') } },
     { name: 'kind', type: 'select', required: true, defaultValue: 'Announcement', options: ['Report', 'Event', 'Results', 'Media', 'Announcement'], admin: { position: 'sidebar' } },
@@ -34,5 +39,5 @@ export const News: CollectionConfig = {
     { name: 'sourceUrl', label: 'Source link', type: 'text', validate: validateLink, admin: { position: 'sidebar' } },
     seoField,
     ...reviewFields,
-  ],
+  ] as Field[]).map(lockForSeo),
 }
