@@ -11,6 +11,7 @@ import { revalidateChange, revalidateDelete } from './revalidate'
 const NOT_PUBLISHER = 'Only a Publisher can publish, unpublish or change live content. Save as a draft and ask a Publisher to review.'
 const OWN_WORK = 'Two-step review: you cannot publish changes you made yourself. Save the draft and ask a different Publisher to approve and publish it.'
 const NEW_ITEM = 'Two-step review: save this as a draft first. A different Publisher then approves and publishes it.'
+const COMBINED = 'Trashing, restoring or unpublishing cannot be combined with edits. Do that step on its own, then edit the draft and send it for review.'
 
 /** A draft save over a live page leaves the live page untouched. The admin sends ?draft=true for it. */
 export const isDraftSave = (req: any) => String(req.query?.draft) === 'true' || req.context?.draftSave === true
@@ -52,9 +53,15 @@ const guardPublish: CollectionBeforeChangeHook = async ({ data, req, collection,
   Object.assign(ctxOf(req), { isDraft, wasPublished, submittedForReview: submitted })
 
   if (data?.deletedAt && !originalDoc?.deletedAt && !canPublish(user)) throw new APIError('Only a Publisher can move items to the trash.', 403)
-  // Trashing takes content offline and restoring brings back what was already reviewed, so one Publisher can do either.
+  // Trashing takes content offline and restoring brings back what was already reviewed, so one Publisher can do either,
+  // but only as a step on its own: content changes in the same request would skip the two-step review.
   if ((data?.deletedAt && !originalDoc?.deletedAt) || (data?.deletedAt === null && originalDoc?.deletedAt)) {
     if (!canPublish(user)) throw new APIError('Only a Publisher can restore items from the trash.', 403)
+    if (user?.role !== 'admin' && originalDoc?.id != null) {
+      const { deletedAt: _skip, ...rest } = data
+      const latest: any = await req.payload.findByID({ collection: collection.slug as any, id: originalDoc.id, draft: true, overrideAccess: true, depth: 0, trash: true })
+      if (changedContent(rest, latest)) throw new APIError(COMBINED, 400)
+    }
     return data
   }
   const requested = data?.reviewStatus === 'changes_requested' && originalDoc?.reviewStatus !== 'changes_requested'
@@ -67,6 +74,11 @@ const guardPublish: CollectionBeforeChangeHook = async ({ data, req, collection,
   if (touchesLive && !canPublish(user)) throw new APIError(NOT_PUBLISHER, 403)
 
   const unpublishing = !isDraft && wasPublished && data?._status === 'draft'
+  // Unpublishing takes content offline. Edits sent with it would be saved without review, so refuse them.
+  if (unpublishing && user?.role !== 'admin') {
+    const latest: any = await req.payload.findByID({ collection: collection.slug as any, id: originalDoc.id, draft: true, overrideAccess: true, depth: 0 })
+    if (changedContent(data, latest)) throw new APIError(COMBINED, 400)
+  }
   if (touchesLive && !unpublishing && !(collection as any).custom?.selfPublish) {
     // Super Admins have full rights: they may create, edit and publish directly. Every action is still written to the audit log.
     if (user?.role === 'admin') {
