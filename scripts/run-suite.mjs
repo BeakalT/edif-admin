@@ -1,5 +1,5 @@
 // Runs the database-level and API test suites and fails (exit 1) if any check fails or a suite crashes.
-// Usage: node scripts/run-suite.mjs payload   → test-stage, test-custom, test-permissions (talk to the database directly)
+// Usage: node scripts/run-suite.mjs payload   → test-stage, test-custom, test-permissions, test-notifications, test-review-fixes (talk to the database directly)
 //        node scripts/run-suite.mjs api       → refreshes test accounts, then drives the running site over HTTP (needs BASE_URL server on :3100)
 import { spawnSync } from 'child_process'
 
@@ -10,6 +10,7 @@ const suites = {
     ['custom HTML/CSS + page builder', ['npx', 'tsx', `--env-file=${ENV}`, 'scripts/test-custom.ts']],
     ['role permissions matrix', ['npx', 'tsx', `--env-file=${ENV}`, 'scripts/test-permissions.ts']],
     ['in-app notifications', ['npx', 'tsx', `--env-file=${ENV}`, 'scripts/test-notifications.ts']],
+    ['independent review fixes (G-01 to G-13)', ['npx', 'tsx', `--env-file=${ENV}`, 'scripts/test-review-fixes.ts']],
   ],
   api: [
     ['refresh test accounts', ['npx', 'tsx', `--env-file=${ENV}`, 'scripts/mkusers.ts'], { silent: true }],

@@ -11,7 +11,7 @@ const mk = async (role: string) => {
   const email = `${role}@edif-cms.org`
   const ex = await payload.find({ collection: 'users', where: { email: { equals: email } }, overrideAccess: true })
   if (ex.docs[0]) return ex.docs[0] as any
-  return (await payload.create({ collection: 'users', overrideAccess: true, data: { email, password: 'Test-' + Math.random().toString(36).slice(2) + 'Aa1!', name: role, role } as any })) as any
+  return (await payload.create({ collection: 'users', overrideAccess: true, data: { email, password: 'Test-' + Math.random().toString(36).slice(2) + 'Aa1!', name: role, role: role.replace(/\d+$/, '') } as any })) as any
 }
 const U: any = {}
 for (const r of ['admin', 'publisher', 'publisher2', 'editor', 'seo', 'auditor']) U[r] = await mk(r)
