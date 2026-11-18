@@ -10,6 +10,7 @@ describe('audit summary', () => {
     expect(summarize({ action: 'publish', actor: 'p@x.et', actorRole: 'publisher', resource: 'pages', documentTitle: 'Home' })).toContain('published the page “Home”')
     expect(summarize({ action: 'delete', actor: 'p@x.et', resource: 'tenders', documentTitle: 'T1' })).toContain('deleted the tender')
     expect(summarize({ action: 'login', actor: 'p@x.et', actorRole: 'admin' })).toBe('p@x.et (Super Admin) signed in')
+    expect(summarize({ action: 'login', actor: 'p@x.et', actorRole: 'admin', changes: { event: { to: 'password accepted, authenticator code still required' } } })).toBe('p@x.et (Super Admin) entered the correct password (authenticator code still required)')
   })
   it('explains security events and unknown actors', () => {
     expect(summarize({ action: 'security', actor: 'x@y.et', documentTitle: 'x@y.et', changes: { event: { to: 'sign-in refused: account locked' } } })).toBe('Sign-in refused: account locked – x@y.et')

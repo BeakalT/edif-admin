@@ -25,8 +25,10 @@ describe('clientIpFrom', () => {
     vi.stubEnv('TRUSTED_PROXY_HOPS', '0')
     expect(clientIpFrom(h({ 'x-forwarded-for': '1.2.3.4' }))).toBe('direct')
   })
-  it('falls back to x-real-ip, then "unknown"', () => {
-    expect(clientIpFrom(h({ 'x-real-ip': '5.5.5.5' }))).toBe('5.5.5.5')
+  it('ignores x-real-ip unless it is the configured header (a visitor can send it)', () => {
+    expect(clientIpFrom(h({ 'x-real-ip': '5.5.5.5' }))).toBe('unknown')
     expect(clientIpFrom(h({}))).toBe('unknown')
+    vi.stubEnv('CLIENT_IP_HEADER', 'x-real-ip')
+    expect(clientIpFrom(h({ 'x-real-ip': '5.5.5.5' }))).toBe('5.5.5.5')
   })
 })
