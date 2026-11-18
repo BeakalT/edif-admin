@@ -74,7 +74,8 @@ export const auditGlobal: GlobalAfterChangeHook = async ({ global, doc, previous
 }
 
 export const auditLogin: CollectionAfterLoginHook = async ({ user, req }) => {
-  await write(req, { action: 'login', resource: 'users', documentId: String(user.id), documentTitle: user.email, changes: {} }, user)
+  // Payload calls this when the password is accepted; the authenticator code is checked after it, so say so
+  await write(req, { action: 'login', resource: 'users', documentId: String(user.id), documentTitle: user.email, changes: { event: { to: 'password accepted, authenticator code still required' } } }, user)
   return user
 }
 export const auditLogout: CollectionAfterLogoutHook = async ({ req }) => {

@@ -93,6 +93,17 @@ export const Users: CollectionConfig = {
     }),
   ],
   hooks: {
+    afterOperation: [
+      async ({ operation, result, req }: any) => {
+        // a completed reset link is not an "update", so neither the audit diff nor the password-changed email covered it
+        if (operation === 'resetPassword' && result?.user?.email) {
+          const u = result.user
+          await audit(req, { action: 'security', documentId: String(u.id), documentTitle: u.email, changes: { event: { to: 'password set through reset link' } } }, u.email, u.role)
+          notifyUser(req.payload, u.email, 'Your password was changed', ['The password for your EDIF admin account was just set using a reset link.', 'If this was not you, contact your Super Admin immediately.'])
+        }
+        return result
+      },
+    ],
     beforeOperation: [
       async ({ args, operation }: any) => {
         if (operation === 'resetPassword') {
@@ -129,6 +140,8 @@ export const Users: CollectionConfig = {
         if (operation === 'create' && ctx.invited) sendInviteAfterCommit(req.payload, doc.email)
         if (operation === 'create' && staffOf(req)?.email) notifyRoles(req.payload, ['admin'], 'New account created', [`${staffOf(req)?.email} created an account for ${doc.email} (${ROLES.find((r) => r.value === doc.role)?.label || doc.role}).`], { except: staffOf(req)?.email, path: adminUrl(`/collections/users/${doc.id}`) })
         if (operation === 'update') {
+          // the audit diff never includes password fields, so record the event itself
+          if (ctx.passwordChanged) await audit(req, { action: 'security', documentId: String(doc.id), documentTitle: doc.email, changes: { event: { to: 'password changed' } } })
           if (ctx.passwordChanged) notifyUser(req.payload, doc.email, 'Your password was changed', ['The password for your EDIF admin account was just changed.', 'If this was not you, contact your Super Admin immediately.'])
           if (previousDoc?.role && previousDoc.role !== doc.role) {
             notifyUser(req.payload, doc.email, 'Your access level changed', [`Your role is now ${ROLES.find((r) => r.value === doc.role)?.label || doc.role}.`])

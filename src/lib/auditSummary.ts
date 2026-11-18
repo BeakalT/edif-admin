@@ -23,7 +23,7 @@ export function summarize(e: Entry): string {
     case 'publish': return `${who} published the ${what}`
     case 'unpublish': return `${who} took the ${what} offline`
     case 'delete': return `${who} deleted the ${what}`
-    case 'login': return `${who} signed in`
+    case 'login': return event ? `${who} entered the correct password (authenticator code still required)` : `${who} signed in`
     case 'logout': return `${who} signed out`
     case 'security': return event ? `${event.charAt(0).toUpperCase()}${event.slice(1)} – ${e.documentTitle || e.actor || 'account'}${e.actor && e.documentTitle && e.actor !== e.documentTitle ? ` (by ${e.actor})` : ''}` : `${who}: ${e.documentTitle || 'security event'}`
     default: return `${who}: ${e.action || 'change'} ${what}`
