@@ -40,6 +40,13 @@ r = await ed.verify(); ok('correct code opens the session', r.s === 200, r.s)
 r = await ed.api('GET', '/news'); ok('editor can now read content', r.s === 200, r.s)
 const [pub, pub2, adm, seo, aud] = await Promise.all(['publisher', 'publisher2', 'admin', 'seo', 'auditor'].map((x) => new Client(x).full()))
 ok('all other roles sign in with a code', true)
+// review G-01: draft preview needs the code, not just the password
+const anyNews = (await ed.api('GET', '/news?limit=1&draft=true')).j.docs?.[0]?.id
+if (anyNews) {
+  const half = new Client('editor'); await half.login()
+  ok('draft preview is refused after the password alone (review G-01)', (await half.raw('GET', `/preview/news/${anyNews}`)).s === 404)
+  ok('draft preview opens once the code is entered', (await ed.raw('GET', `/preview/news/${anyNews}`)).s === 200)
+}
 
 // ---------- password policy ----------
 const weak = ['short1A!', 'alllowercaseletters', 'Password1234!', 'Aaaa1111Bbbb!!', 'MyEditor#Test99']
@@ -118,6 +125,8 @@ ok('after a reset they must enrol again before getting access', (await p2.api('G
 
 // ---------- public site still fine ----------
 ok('home page loads', (await site('/')).s === 200)
-const med = await fetch(B + '/api/media?limit=1', { headers: { 'x-forwarded-for': nextIp() } }); ok('anonymous API listing of media is public by design', med.status === 200)
+const med = await fetch(B + '/api/media?limit=1', { headers: { 'x-forwarded-for': nextIp() } }); ok('visitors cannot list the media library (review G-05)', med.status === 403, med.status)
+const fileUrl = ((await site('/about')).t || '').match(/\/api\/media\/file\/[^"?&) ]+/)?.[0]
+if (fileUrl) { const f = await fetch(B + fileUrl, { headers: { 'x-forwarded-for': nextIp() } }); ok('visitors can still open a file the site links to', f.status === 200, f.status) }
 ok('anonymous cannot read news through the API', (await new Client(null).api('GET', '/news')).s === 403)
 console.log(`\n${pass}/${pass + fail} passed`); process.exit(fail ? 1 : 0)
