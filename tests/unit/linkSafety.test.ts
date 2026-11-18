@@ -4,7 +4,11 @@ import { jsonLd } from '@/lib/jsonLd'
 
 describe('link addresses typed by staff', () => {
   it('keeps page paths, anchors, web, mail and phone links', () => {
-    for (const u of ['/about', '#faq', 'https://edif.gov.et/x', 'http://a.b', 'mailto:a@b.et', 'tel:+251115']) expect(safeHref(u)).toBe(u)
+    for (const u of ['/about', '#faq', 'https://edif.gov.et/x', 'https://a.b', 'mailto:a@b.et', 'tel:+251115']) expect(safeHref(u)).toBe(u)
+  })
+  it('sends a plain http:// link as https://', () => {
+    expect(safeHref('http://a.b/x')).toBe('https://a.b/x')
+    expect(validateLink('http://a.b')).toBe(true)
   })
   it('drops script, data, protocol-relative and malformed addresses', () => {
     for (const u of ['javascript:alert(1)', ' JavaScript:x', 'data:text/html,x', '//evil.example', '/\\evil', 'java\tscript:x', 'https://', 'about']) expect(safeHref(u)).toBeUndefined()

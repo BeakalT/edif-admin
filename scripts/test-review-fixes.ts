@@ -74,6 +74,57 @@ await payload.resetPassword({ collection: 'users', data: { token: token as strin
 const audit = await payload.find({ collection: 'audit-log', where: { and: [{ documentTitle: { equals: U.seo.email } }, { action: { equals: 'security' } }] }, sort: '-createdAt', limit: 1, overrideAccess: true })
 check('G-11 a password reset writes an audit entry', /reset link/.test(JSON.stringify((audit.docs[0] as any)?.changes || {})), JSON.stringify((audit.docs[0] as any)?.changes))
 
+// S-02: only a Super Admin can point the site-wide banner at another website
+const nb = (u: any, linkUrl: string) => payload.create({ collection: 'notices', draft: true, data: { message: 'Test banner ' + tag, linkLabel: 'More', linkUrl } as any, ...as(u) })
+await refused('S-02 a Publisher cannot link a banner off-site', () => nb(U.publisher, 'https://evil.example/login'), /Super Admin/)
+await allowed('S-02 a Publisher can link a banner to a page on this site', async () => { const d: any = await nb(U.publisher, '/faq'); await payload.delete({ collection: 'notices', id: d.id, overrideAccess: true, context: { seeding: true } }) })
+await allowed('S-02 a Super Admin can link a banner off-site', async () => { const d: any = await nb(U.admin, 'https://nbe.gov.et'); await payload.delete({ collection: 'notices', id: d.id, overrideAccess: true, context: { seeding: true } }) })
+
+// S-01: a password change or role change signs the other sessions out
+const sess = await user('session-test@edif-cms.org', 'editor')
+const sessions = () => payload.db.findOne({ collection: 'users', where: { id: { equals: sess.id } } }).then((u: any) => (u.sessions || []).map((x: any) => x.id))
+const exp = new Date(Date.now() + 3600_000).toISOString()
+const seed = async () => { const full: any = await payload.db.findOne({ collection: 'users', where: { id: { equals: sess.id } } }); await payload.db.updateOne({ collection: 'users', id: sess.id, data: { ...full, sessions: [{ id: 'sid-a', createdAt: exp, expiresAt: exp }, { id: 'sid-b', createdAt: exp, expiresAt: exp }] } as any }) }
+await seed()
+const hashBefore = ((await payload.db.findOne({ collection: 'users', where: { id: { equals: sess.id } } })) as any).hash
+await payload.update({ collection: 'users', id: sess.id, data: { password: 'Fresh-Long-Passphrase-' + tag + '-Zq9' } as any, user: { ...sess, collection: 'users', _strategy: 'totp', _sid: 'sid-a' } as any, overrideAccess: false })
+check('S-01 the new password hash was kept', ((await payload.db.findOne({ collection: 'users', where: { id: { equals: sess.id } } })) as any).hash !== hashBefore)
+check('S-01 own password change keeps only the current session', JSON.stringify(await sessions()) === JSON.stringify(['sid-a']), JSON.stringify(await sessions()))
+await seed()
+await payload.update({ collection: 'users', id: sess.id, data: { role: 'seo' } as any, ...as(U.admin) })
+check('S-01 a role change signs the person out everywhere', (await sessions()).length === 0, JSON.stringify(await sessions()))
+check('S-01 and the role stays changed (the write did not restore the old row)', ((await payload.db.findOne({ collection: 'users', where: { id: { equals: sess.id } } })) as any).role === 'seo')
+await payload.update({ collection: 'users', id: sess.id, data: { role: 'editor' } as any, ...as(U.admin) })
+
+// SiteSettings: an SEO Manager can edit search settings but not the maintenance switch or contact details
+const ss0: any = await payload.findGlobal({ slug: 'site-settings', overrideAccess: true })
+await payload.updateGlobal({ slug: 'site-settings', data: { maintenance: { enabled: true, message: 'x' }, email: 'hacked@example.org', defaultSeo: { title: 'SEO title ' + tag } } as any, ...as(U.seo) }).catch(() => null)
+const ss1: any = await payload.findGlobal({ slug: 'site-settings', overrideAccess: true })
+check('SEO Manager cannot change maintenance mode or the public email', !!ss1.maintenance?.enabled === !!ss0.maintenance?.enabled && ss1.email === ss0.email, JSON.stringify({ m: ss1.maintenance?.enabled, e: ss1.email }))
+check('SEO Manager can change the default search title', ss1.defaultSeo?.title === 'SEO title ' + tag, String(ss1.defaultSeo?.title))
+await payload.updateGlobal({ slug: 'site-settings', data: { defaultSeo: { title: ss0.defaultSeo?.title || null } } as any, overrideAccess: true, context: { seeding: true } })
+
+// Contact messages: a Publisher cannot rewrite what a citizen wrote, but can still triage
+const msg: any = await payload.create({ collection: 'messages', data: { name: 'Test Sender', email: 'sender@example.org', message: 'Original message ' + tag, topic: 't', subject: 's' } as any, overrideAccess: true, context: { seeding: true } })
+await payload.update({ collection: 'messages', id: msg.id, data: { message: 'Rewritten by publisher', status: 'progress' } as any, ...as(U.publisher) }).catch(() => null)
+const msg2: any = await payload.findByID({ collection: 'messages', id: msg.id, overrideAccess: true })
+check('G-msg a Publisher cannot change the text of a contact message', msg2.message === 'Original message ' + tag, msg2.message)
+check('G-msg a Publisher can still change its status', msg2.status === 'progress', msg2.status)
+await payload.delete({ collection: 'messages', id: msg.id, overrideAccess: true, context: { seeding: true } })
+
+
+// Media: replacing a live file needs a Publisher
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
+const swap = (n: string) => ({ data: PNG, mimetype: 'image/png', name: n, size: PNG.length })
+const mf: any = await payload.create({ collection: 'media', data: { alt: 'probe ' + tag }, file: swap('probe-' + tag + '.png'), overrideAccess: true, context: { seeding: true } })
+for (const who of ['editor', 'seo'] as const) {
+  const r = await payload.update({ collection: 'media', id: mf.id, data: {}, file: swap('swap-' + who + '-' + tag + '.png'), ...as((U as any)[who]) }).then(() => 'replaced', (e: any) => 'refused')
+  check('G-media ' + who + ' cannot replace a live file', r === 'refused', r)
+}
+await allowed('G-media an Editor can still edit alt text', () => payload.update({ collection: 'media', id: mf.id, data: { alt: 'edited ' + tag }, ...as(U.editor) }))
+await allowed('G-media a Publisher can replace a file', () => payload.update({ collection: 'media', id: mf.id, data: {}, file: swap('swap-pub-' + tag + '.png'), ...as(U.publisher) }))
+await payload.delete({ collection: 'media', id: mf.id, overrideAccess: true, context: { seeding: true } })
+
 // clean up
 await payload.delete({ collection: 'news', id: n.id, overrideAccess: true, context: { seeding: true } })
 await payload.delete({ collection: 'pages', id: pg.id, overrideAccess: true, context: { seeding: true } })

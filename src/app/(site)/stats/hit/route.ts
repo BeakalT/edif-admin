@@ -22,6 +22,11 @@ export async function POST(req: Request) {
   const sys = { overrideAccess: true as const, context: { seeding: true } }
   const ex = await payload.find({ collection: 'page-views', where: { and: [{ day: { equals: day } }, { path: { equals: path } }] }, limit: 1, depth: 0, ...sys })
   if (ex.docs[0]) await payload.update({ collection: 'page-views', id: ex.docs[0].id, data: { views: ((ex.docs[0] as any).views || 0) + 1 }, ...sys })
-  else await payload.create({ collection: 'page-views', data: { day, path, views: 1 }, ...sys })
+  else {
+    // a visitor cannot fill the table with made-up paths: a site has a few hundred real pages, so cap the distinct paths kept per day
+    const today = await payload.count({ collection: 'page-views', where: { day: { equals: day } }, ...sys })
+    if (today.totalDocs >= 1000) return new Response(null, { status: 204 })
+    await payload.create({ collection: 'page-views', data: { day, path, views: 1 }, ...sys })
+  }
   return new Response(null, { status: 204 })
 }

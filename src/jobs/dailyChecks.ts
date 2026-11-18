@@ -10,7 +10,7 @@ import { notifyInApp, usersWithRoles } from '@/lib/notify'
  *  - tenders and vacancies closing within 3 days
  *  - scheduled publish/unpublish jobs that failed
  *  - backups older than 48 hours (only when a backup folder is in use)
- *  - tidy-up: read notifications older than 30 days
+ *  - tidy-up: read notifications older than 30 days, and visit counts older than PAGEVIEW_KEEP_DAYS (default 400)
  */
 export const dailyChecks: TaskConfig<'dailyChecks'> = {
   slug: 'dailyChecks',
@@ -44,6 +44,8 @@ export const dailyChecks: TaskConfig<'dailyChecks'> = {
     } catch { /* no backup folder here: backups may be handled by the hosting platform */ }
 
     await payload.delete({ collection: 'notifications', overrideAccess: true, where: { and: [{ readAt: { less_than: new Date(Date.now() - 30 * 864e5).toISOString() } }] } }).catch(() => {})
+    const keepDays = Math.max(30, Number(process.env.PAGEVIEW_KEEP_DAYS) || 400)
+    await payload.delete({ collection: 'page-views', overrideAccess: true, where: { day: { less_than: new Date(Date.now() - keepDays * 864e5).toISOString().slice(0, 10) } } }).catch(() => {})
     return { output: {} }
   },
 }

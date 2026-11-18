@@ -29,13 +29,13 @@ export const pageHero: Block = { slug: 'pageHero', labels: { singular: 'Page ban
 ] }
 
 export const nextLinks: Block = { slug: 'nextLinks', labels: { singular: 'Keep reading links', plural: 'Keep reading links' }, fields: [
-  { name: 'items', type: 'array', maxRows: 4, fields: [t('url', { required: true }), t('kicker'), t('title', { required: true }), ta('text')] },
+  { name: 'items', type: 'array', maxRows: 4, fields: [t('url', { required: true, validate: validateLink }), t('kicker'), t('title', { required: true }), ta('text')] },
 ] }
 
 export const band: Block = { slug: 'band', labels: { singular: 'Dark band', plural: 'Dark bands' }, fields: [
   t('eyebrow'), t('title', { required: true }), lines('paragraphs', 'Paragraphs'),
   { name: 'showContact', type: 'checkbox', label: 'Show the Fund’s email and phone', defaultValue: false },
-  { name: 'button', type: 'group', fields: [t('label'), t('url')] },
+  { name: 'button', type: 'group', fields: [t('label'), t('url', { validate: validateLink })] },
   { name: 'curves', type: 'checkbox', label: 'Decorative curves', defaultValue: true },
 ] }
 

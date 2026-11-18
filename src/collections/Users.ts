@@ -141,6 +141,13 @@ export const Users: CollectionConfig = {
         if (operation === 'create' && staffOf(req)?.email) notifyRoles(req.payload, ['admin'], 'New account created', [`${staffOf(req)?.email} created an account for ${doc.email} (${ROLES.find((r) => r.value === doc.role)?.label || doc.role}).`], { except: staffOf(req)?.email, path: adminUrl(`/collections/users/${doc.id}`) })
         if (operation === 'update') {
           // the audit diff never includes password fields, so record the event itself
+          // sign every other browser out: a copied session cookie must not outlive a password change or a role change
+          const ownChange = ctx.passwordChanged && String(staffOf(req)?.id) === String(doc.id)
+          if (ctx.passwordChanged || (previousDoc?.role && previousDoc.role !== doc.role)) {
+            const full = (await req.payload.db.findOne({ collection: 'users', where: { id: { equals: doc.id } }, req })) as { sessions?: { id: string }[] } | null
+            const keep = ownChange ? (full?.sessions || []).filter((s) => s.id === (req.user as { _sid?: string } | null)?._sid) : []
+            if (full && (full.sessions || []).length !== keep.length) await req.payload.db.updateOne({ collection: 'users', id: doc.id, data: { sessions: keep, updatedAt: new Date().toISOString() } as any, req })
+          }
           if (ctx.passwordChanged) await audit(req, { action: 'security', documentId: String(doc.id), documentTitle: doc.email, changes: { event: { to: 'password changed' } } })
           if (ctx.passwordChanged) notifyUser(req.payload, doc.email, 'Your password was changed', ['The password for your EDIF admin account was just changed.', 'If this was not you, contact your Super Admin immediately.'])
           if (previousDoc?.role && previousDoc.role !== doc.role) {

@@ -82,10 +82,17 @@ const guardPublish: CollectionBeforeChangeHook = async ({ data, req, collection,
   if (touchesLive && !canPublish(user)) throw new APIError(NOT_PUBLISHER, 403)
 
   const unpublishing = !isDraft && wasPublished && data?._status === 'draft'
-  // Unpublishing takes content offline. Edits sent with it would be saved without review, so refuse them.
+  // Unpublishing takes content offline. Payload merges the latest DRAFT into a non-draft save, so write the LIVE content
+  // back: unpublishing changes the status and nothing else, and edits sent with it are refused.
   if (unpublishing && user?.role !== 'admin') {
     const latest = await req.payload.findByID({ collection: collection.slug as CollectionSlug, id: originalDoc.id, draft: true, overrideAccess: true, depth: 0 })
     if (changedContent(data, latest)) throw new APIError(COMBINED, 400)
+    const live = (await req.payload.findByID({ collection: collection.slug as CollectionSlug, id: originalDoc.id, draft: false, overrideAccess: true, depth: 0 })) as unknown as Record<string, unknown>
+    for (const k of Object.keys(data)) {
+      if (META.has(k)) continue
+      if (live[k] === undefined) delete data[k]
+      else data[k] = live[k]
+    }
   }
   if (touchesLive && !unpublishing && !(collection as any).custom?.selfPublish) {
     // Super Admins have full rights: they may create, edit and publish directly. Every action is still written to the audit log.

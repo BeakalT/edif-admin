@@ -9,6 +9,7 @@ import { buildConfig, type CollectionConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 import { payloadTotp } from 'payload-totp'
+import { logFailedCodes } from './lib/twoFactor'
 import { emailAdapter } from './lib/mailer'
 
 import { Users } from './collections/Users'
@@ -102,5 +103,7 @@ export default buildConfig({
     ...storage,
     // two-factor sign-in for every staff account; must stay last
     payloadTotp({ collection: 'users', forceSetup: true, totp: { issuer: 'EDIF Admin', digits: 6, period: 30, algorithm: 'SHA1' } }),
+    // records wrong authenticator codes in the audit log (the plugin does not); only touches the verify endpoint
+    logFailedCodes,
   ],
 })

@@ -1,5 +1,5 @@
 import { ctxOf } from '@/lib/reqTypes'
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionConfig } from 'payload'
 import { canDelete, canWriteContent, hasRole } from '../access'
 import { withAudit } from '../hooks/audit'
 import { adminOnlyDelete } from '../hooks/publishGuard'
@@ -18,7 +18,10 @@ export const Media: CollectionConfig = {
     update: canWriteContent,
     delete: canDelete,
   },
-  hooks: { ...withAudit, beforeOperation: [async ({ req, operation }: any) => { if ((operation === 'create' || operation === 'update') && req.file?.data && !ctxOf(req)?.seeding) await sanitizeUpload(req.file) }], beforeDelete: [adminOnlyDelete, guardMediaDelete], beforeChange: [guardMediaTrash] },
+  hooks: { ...withAudit, beforeOperation: [async ({ req, operation }: any) => {
+    // Replacing the bytes of a file that is already on the site changes what visitors see, so it needs a Publisher.
+    if (operation === 'update' && req.file?.data && !ctxOf(req)?.seeding && !hasRole(req.user, 'admin', 'publisher')) throw new APIError('Only a Publisher can replace a file that is already on the site. Upload it as a new file instead.', 403)
+    if ((operation === 'create' || operation === 'update') && req.file?.data && !ctxOf(req)?.seeding) await sanitizeUpload(req.file) }], beforeDelete: [adminOnlyDelete, guardMediaDelete], beforeChange: [guardMediaTrash] },
   trash: true,
   custom: { totp: { disableAccessWrapper: { read: true } } }, // file downloads are public by design; listing is checked in read above
   upload: {

@@ -36,8 +36,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Fail on critical advisories in production dependencies
         run: npm audit --omit=dev --audit-level=critical
-      - name: Report high advisories (informational until Payload ships fixes)
-        run: npm audit --omit=dev --audit-level=high || true
+      - name: Fail on any high advisory that is not on the reviewed allow-list
+        run: node scripts/audit-gate.mjs
       - name: Secret scan
         uses: gitleaks/gitleaks-action@v2
         env:

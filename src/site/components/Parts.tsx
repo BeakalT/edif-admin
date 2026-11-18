@@ -392,7 +392,7 @@ export function FaqSplit(p: { eyebrow?: string; title?: string; em?: string; lea
 }
 
 export function NextLinksPart({ items }: { items?: { url: string; kicker: string; title: string; text: string }[] }) {
-  return <NextLinks items={(items || []).map((i) => ({ to: i.url, k: i.kicker, t: i.title, d: i.text }))} />
+  return <NextLinks items={(items || []).map((i) => ({ to: safeHref(i.url) || '#', k: i.kicker, t: i.title, d: i.text }))} />
 }
 
 export { SecHead }

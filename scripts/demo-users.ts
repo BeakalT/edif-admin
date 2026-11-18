@@ -9,6 +9,11 @@ const demo: Record<string, string> = {
   seo: 'Golden-Falcon-Bridge-31v',
   auditor: 'Calm-Meadow-Anchor-58t',
 }
+// These passwords are in the repository: never run this against a real database.
+if (process.env.NODE_ENV === 'production' || !/^file:/.test(process.env.DATABASE_URL || '')) {
+  console.error('Refusing to run: this script creates accounts with known passwords. It only runs against the local SQLite demo database (DATABASE_URL=file:…) and never in production.')
+  process.exit(1)
+}
 const payload = await getPayload({ config })
 for (const [key, password] of Object.entries(demo)) {
   const role = key.replace(/\d$/, '')

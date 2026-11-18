@@ -9,7 +9,8 @@ const OK = /^(https?:\/\/[^\s/\\]|mailto:|tel:|\/(?![/\\])|#)/i
 const BAD_CHARS = /[\u0000-\u001f\u007f\\]/
 
 export const safeHref = (u?: string | null): string | undefined => {
-  const v = String(u ?? '').trim()
+  // a plain http:// link can be altered on the way, so it is sent as https://
+  const v = String(u ?? '').trim().replace(/^http:\/\//i, 'https://')
   return v && OK.test(v) && !BAD_CHARS.test(v) ? v : undefined
 }
 

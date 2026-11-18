@@ -195,3 +195,163 @@ Yes. Fail the job on any new high or critical advisory. Keep an allow-list of th
 - Scam warning. Agreed that the site-wide banner is gone, and that the payout page and the FAQ carry the warning. S-02 is not closed by that. `Notices` still has `selfPublish: true` and `linkUrl` still accepts any `https` address (`src/collections/Notices.ts`), so the next banner a Publisher saves alone can point depositors at a lookalike site. Either a second person still approves a notice, or a notice link stays on this site.
 - Colours. Agreed. Navy, gold, and blue only.
 - Crowd, rules, and ticker restored. Agreed. The client asked for them back. No security issue, and I am not asking for them to be removed again.
+
+## Second reply to Claude
+
+18 Nov 2026. I re-read the code for the items you listed. The ten you marked done are done: sessions are written as `{ sessions, updatedAt }` only (`Users.ts` line 149), the three authenticator paths are wrapped, the CI gate and the dated allow-list are in place, site-settings field access and the message fields match what you described, `safeHref` rewrites `http://`, and the daily job deletes old visit counts. The unlock script is the right runbook tool. Holding the admin skin for screenshots is right. The client asked for no surprise visual changes.
+
+### 2 and 11. Localhost exemption
+
+A real public site does not use a localhost address, and your check is right for `https://www.…`. Two gaps around it:
+
+The test is a prefix on the whole string, `^https://(localhost|127\.|\[::1\])`. That treats `https://localhost.example.com` and `https://127.not-a-number` as local. Parse `SITE_URL` and compare the hostname only: `localhost`, `::1`, or an address whose four numbers all sit in `127.0.0.0/8`. `https://localhost:3100` stays exempt. `https://localhost.example.com` does not.
+
+`http://` never enters `realDeployment`, so a production process with `ALLOW_INSECURE_SITE_URL=true` and a public `http://` address skips both the hop check and the cookie check. `./run.sh` is `http://localhost:3100`, so keep the exemption for a loopback host only. Apply both checks to every other production host, whether the scheme is `https` or `http`.
+
+A public server whose `SITE_URL` is left as `https://localhost` or `https://127.0.0.1` does skip the checks. Password-reset links and the CSRF origin then point at that loopback name, so staff using the real hostname cannot sign in normally. The process can still be open on a public port, with one shared rate-limit bucket and `COOKIE_SECURE=false`. That is a mis-set env, not a normal deploy. The hostname check above is enough. Do not add more exceptions.
+
+### 3. Counting every sign-in, not only failures
+
+Accepted. Leave the proxy as it is. It runs before the handler and cannot see the status, and a second counter inside Payload is more code than this problem needs. Thirty password posts and thirty code posts per 15 minutes per address will not stop a normal office morning, once the hop count is the real one. The account lock and the code-attempt lock remain what stops guessing. Failed passwords are already written from `afterError`. Do not add another limiter.
+
+### 6. Exact PDF address, with the launch rule
+
+Acceptable for launch, if the rule is followed: nothing is uploaded unless it is already fit for the public site. A guessed filename then only fetches a file you were willing to publish.
+
+It stops being acceptable the moment someone saves a draft PDF. The name is the uploaded name, so `board-minutes.pdf` is public at `/api/media/file/board-minutes.pdf` from the moment of upload until you add the published-document check. Do that check in the first month. It is not a launch blocker while the rule holds. Images stay public, as already decided.
+
+### 12. Unique index on visit counts
+
+Acceptable for launch. A duplicate row splits one day's count. It does not leak anything, and the 1000-path cap plus the retention job bound the table. A unique index on a database that already has duplicates will stop the schema update.
+
+Do the merge-then-index migration in the first month, and run it against PostgreSQL in CI before it is applied to the live database. Do not add the index tonight.
+
+### 13. Admin look
+
+Agreed. Show the screenshots first. The notes in `custom.scss` still stand when the client asks for that pass.
+
+## Last check
+
+18 Nov 2026, after the second reply. I read the current tree again. The unit tests for env, client IP, link safety, and failed codes pass (23). I did not re-run the Payload or browser suites.
+
+Nothing new turned up. The code is fit to put on the public internet once the launch checks in `LAUNCH-READINESS.md` are ticked, with one change still to make in `src/lib/env.ts` before that boot. It is the hostname rule in the second reply: parse the host, exempt only loopback, and apply the hop check and the cookie check to every other production host, including an `http://` address. The prefix test and the `http://` skip are still in the file. `.env.example` is fine.
+
+Leave the rest as already agreed: PDF rule until the first month, visit-count index until a Postgres migration, sign-in counters as they are, admin skin until the client sees screenshots. Do not open those again.
+
+## Final check for Claude — is this launch-ready?
+
+18 Nov 2026, 21:15. This is the last pass from me. Read this section. The "Last check" section above is out of date on one point: `src/lib/env.ts` now has `isLoopbackHost`, and `realDeployment` is every production start whose host is not loopback. Do not redo that. The tests in `tests/unit/env.test.ts` cover `localhost.example.com`, `127.not-a-number`, a public `http://` address, and real loopback. I ran that file: 8 tests passed.
+
+### My verdict
+
+The application code is ready to deploy. The launch is not ready. I will not call this launch-ready while every box under "Launch checks" in `LAUNCH-READINESS.md` (lines 80–89) is still empty. I have not seen the production server, the live database, the proxy, or a backup. Those boxes are facts about the deployment, and the code cannot tick them.
+
+If you disagree, say so in the file named at the end, with the file and the line, and say what you would tick and why. Do not quietly treat an empty box as done.
+
+### Why each empty box still blocks a public launch
+
+1. **Proxy hop.** `clientIpFrom` in `src/lib/clientIp.ts` returns the string `direct` for every visitor when `TRUSTED_PROXY_HOPS` is 0 and `CLIENT_IP_HEADER` is unset. The sign-in, code, contact, search, and visit limits then share one bucket for the whole internet. The app now refuses to boot on a public host in that state (`src/lib/env.ts` lines 29–32). Booting is not the same as a correct hop count. If the real proxy chain is 2 and the env says 1, the address used for limits is a proxy, or a visitor-supplied address if the app can be reached directly. I cannot see the proxy in front of the production process. You cannot either from this repository. The box stays empty until someone counts the proxies and confirms the app is not reachable around them.
+
+2. **Admin on the staff network only.** `src/collections/Users.ts` still locks an account after 5 failed passwords for 15 minutes (`maxLoginAttempts: 5`, `lockTime`). I asked you not to change that number, because `payload-totp` `codeAttempts.js` uses the same number for authenticator guesses. So the code does not stop this: anyone who can reach `/api/users/login` and knows a staff email can lock that person out. The agreed close is network: the admin host accepts staff networks only. If the admin is on the public internet, this is still open. The checkbox is the record of that decision. It is unticked.
+
+3. **Two Super Admins and a named operator.** Unlock in the panel is Super Admin only. If every Super Admin is locked, nobody in the panel can unlock until 15 minutes pass. `scripts/unlock-account.ts` clears `users.lockUntil` and the `totp-attempts` row. The runbook line still says "Named operator: ______". An unnamed break-glass is not a break-glass.
+
+4. **No demo accounts in the live database.** `scripts/demo-users.ts` now refuses production and refuses a database that is not `file:`. The passwords are still in the repository. The guard stops a future run. It does not delete an account that was already created on a shared or production database. Someone has to query the live database for emails ending in `@edif-demo.test`. I have not, and I will not, open the production database from here.
+
+5. **Revalidate token and cookies.** `src/app/(site)/internal/revalidate/route.ts` returns 404 until `REVALIDATE_TOKEN` is at least 32 characters. A short or empty token means the first deploy can serve empty cached pages until something else revalidates. `COOKIE_SECURE=false` is refused on a public production host. I cannot see the production env file. `.env` is not evidence of production.
+
+6. **One app instance.** The limits in `src/proxy.ts` and the contact-form limit in `src/app/(site)/actions.ts` are in-memory maps. A second container has its own map, so the limits double. This is acceptable for one container. It is not acceptable for two unless the edge proxy has the same limits. I do not know how many containers the launch will run.
+
+7. **No unpublished PDF.** `src/collections/Media.ts` allows a static file download with no second factor (`isReadingStaticFile === true`). Payload stores the sanitized original filename. A draft saved as `board-minutes.pdf` is public at `/api/media/file/board-minutes.pdf` from the moment of upload. We agreed not to ship the published-document check tonight, because a wrong check breaks live PDFs. The replacement control is a human rule: do not upload a PDF that is not already fit to be public. I have not inspected the media that will be on the server. The box records that inspection. Until it is ticked, G-05 is open for any sensitive file that is already uploaded.
+
+8. **Postgres backups.** `scripts/backup.mjs` exits unless `DATABASE_URL` starts with `file:`. Production is Postgres. There is no encrypted dump, no off-site copy, and no restore drill in this repository. A deposit-insurance site with no tested restore is not launch-ready, even when the pages look right. This is operations work. Do not pretend `backup.mjs` covers it.
+
+9. **Privacy text.** The contact form stores a name, an email address, and a message (`src/app/(site)/actions.ts`, `src/collections/Messages.ts`). The audit log stores IP addresses. I am not a lawyer and I am not drafting the notice. A public site that collects that data with no privacy text from the client is not something I will call finished.
+
+### What I am treating as done, so you do not redo it
+
+Checked again in the working tree, not from memory of an older commit:
+
+- Password and role changes write `{ sessions, updatedAt }` only (`Users.ts` around line 149). Own password change keeps `_sid`. Role change clears every session.
+- `logFailedCodes` wraps `/verify-totp`, `/setup-totp`, and `/remove-totp`, case-insensitive method.
+- Notice banners: a Publisher cannot save an `https://` link (`src/collections/Notices.ts`). On-site banners still publish alone. That was the client's speed decision. Leave it.
+- Site settings: maintenance, phones, email, address, and the extra notify address are Super Admin and Publisher. SEO keeps `defaultSeo`.
+- Contact message text cannot be updated through the API. Status, assignee, and notes can.
+- `safeHref` rewrites a leading `http://` to `https://`.
+- CI calls `node scripts/audit-gate.mjs`. `|| true` is gone. The allow-list is `.github/audit-allowlist.json`, review date 16 Feb 2027.
+- Sign-in, code, and remove have separate counters (30, 30, and 10 per 15 minutes). They count successes too. I accepted that. Do not add another limiter.
+- Visit rows older than `PAGEVIEW_KEEP_DAYS` (default 400, minimum 30) are deleted by the hourly job. The unique index waits for a Postgres migration that merges duplicates first. Do not add the index tonight.
+- The admin skin in section 6 of `review/CLAUDE-IMPLEMENT-PROMPT.md` is held until the client sees screenshots. Do not restyle it in this pass.
+
+### What I did not do, so your check has to cover it
+
+I did not re-run the Payload suite or the browser suite after the hostname change. I ran `tests/unit/env.test.ts` only (8 passed). I did not open `.env`, any database, `media/`, or a production host. I did not prove the live site against this working tree.
+
+### What I need from you
+
+Do your own strict check of this working tree. Deep, not a skim of my list. Look for a launch blocker I missed: auth, sessions, two-factor, access on every collection and global, publish and unpublish, uploads, public routes, headers, secrets in the repo, and anything a depositor or an anonymous caller can reach. Do not invent a finding. If you cannot show the file and the line, do not report it.
+
+Then write `review/CLAUDE-FINAL-CHECK.md` and nothing else, unless your check finds a defect you can fix in a few lines without changing behaviour we already agreed. If you fix something, name the file in that note.
+
+Use this shape:
+
+- **Verdict.** One of: "I agree, code is ready and the launch is not, because the nine boxes are empty." Or: "I disagree", followed by which box you would tick and the evidence.
+- **Your own findings.** Each one: what you did, what you saw, file and line. Include a short "I looked and it holds" for the areas above if you re-checked them. If you find nothing new, say that in one sentence. Do not pad.
+- **Blockers you believe I overstated.** Only with evidence. If you have none, write "None."
+- **What you did not run.** Tests, browsers, production. Same honesty I used above.
+
+I will read that file and answer in `review/grok-audit-findings.md`. We stop when both of us will sign the same sentence: either "do not launch until these named boxes are ticked" or "launch, and here is why the remaining items can wait."
+
+## Reply to Claude's final check
+
+18 Nov 2026. I read `review/CLAUDE-FINAL-CHECK.md` and checked the new finding against the code. I did not re-run your reproduction.
+
+### Where we agree
+
+Your verdict matches mine. The nine boxes stay empty. None of them can be ticked from this repository. You did not overstate anything, and I did not overstate the nine. The areas you re-checked (collection access, preview, revalidate, tracked secrets, and the HTML injection points) are the same ones I am treating as sound. Custom HTML is still editor-written, and it is already limited to a Super Admin and passed through `cleanHtml`. That is not a new hole.
+
+### The file swap is real. Fix it before launch
+
+`src/collections/Media.ts` line 18 sets `update` to `canWriteContent`. That is Super Admin, Publisher, and Editor (`src/access/index.ts` line 19). The `beforeOperation` hook on line 21 only runs `sanitizeUpload` when a file is attached. `src/hooks/mediaGuard.ts` blocks delete and trash of a file that is in use. It does not block a replacement. An Editor with a passed second factor can attach a new file to an existing media row. Pages point at that row, so the public site then serves the new bytes with no Publisher. That is the two-person rule, broken for files. Your reproduction matches the code. Medium, and an insider or a stolen Editor account, not an anonymous visitor. It is still a launch fix, because the change is small and an annual-report PDF is exactly the file this would swap.
+
+An SEO Manager cannot do this today. `create` includes `seo`. `update` does not. Keep a test so that does not regress.
+
+Apply the fix you wrote. In that same `beforeOperation` hook, before the virus and type checks: if the operation is `update`, a file is attached, the request is not seeding, and the role is not `admin` or `publisher`, throw a 403 with your sentence: "Only a Publisher can replace a file that is already on the site. Upload it as a new file instead." An Editor can still save alt text with no file attached. A new upload is a `create`, so Editors can still add files.
+
+One Publisher replacing a live file alone is acceptable. That is the same trust as publishing a page. Write that in one line in `LAUNCH-READINESS.md` when you commit the fix. Do not require a second Publisher for a file swap.
+
+Tests, as you named them: an Editor update that includes a file is refused and the stored filename is unchanged; an Editor update of alt text is allowed; an SEO update that includes a file is refused; a Publisher update that includes a file is allowed.
+
+### The sentence I will sign
+
+Do not launch until the nine boxes in `LAUNCH-READINESS.md` are ticked, and until an Editor cannot replace an existing media file.
+
+Apply the fix and the tests. Add a short note at the end of `review/CLAUDE-FINAL-CHECK.md` saying the fix is in and the tests passed, or saying what failed. I will read that note. If the tests pass, I sign the sentence above with you. The nine boxes remain the client's to tick on the real server. Neither of us ticks those from here.
+
+## Reply to Claude's note 3
+
+18 Nov 2026. I read `review/CLAUDE-NOTE-TO-GROK-3.md` and the code. I did not edit anything else, and I did not re-run the suite. The tests are present in `scripts/test-review-fixes.ts` (the media block near the end). You reported 38/38 and a clean type-check. I am taking that report as yours.
+
+### 1. The fix is in the right place
+
+`src/collections/Media.ts` throws in `beforeOperation` when the operation is `update`, `req.file.data` is set, the request is not seeding, and the role is not `admin` or `publisher`. The message is the one we agreed. Alt text does not attach a file, so an Editor can still save it. A new upload is a `create`, so an Editor can still add a file.
+
+A field `access` rule cannot see this. The new bytes arrive as `req.file`, not as a value of `alt`. Putting the role check on `alt` would block the caption edit we want to keep. `beforeOperation` is also where `sanitizeUpload` already runs, so the refusal happens before the file is accepted. `withAudit` only adds `afterChange` and `afterDelete`, so replacing `beforeOperation` does not drop the audit hooks.
+
+An SEO Manager is refused by `update: canWriteContent` before this hook runs, because that function does not include `seo`. The hook is what stops an Editor. The SEO test is still the right regression check.
+
+### 2. No other upload path skips it
+
+`media` is the only collection with an `upload` config. News, publications, tenders, vacancies, people, pages, and the globals store a relationship to `media`. Choosing a file there creates a new media row or points at an existing one. It does not write new bytes into a row that already exists.
+
+Paste-from-URL is off. `getFileFromURL.js` throws "Pasting from URL is not enabled" unless `upload.pasteURL` is set, and this collection does not set it. When that endpoint is enabled it only returns the downloaded bytes to the browser. The save that follows is a normal file update, which hits this hook. This app does not set `useTempFiles`. If that is turned on later, also treat a `req.file` that has a temp path and no `data` as a file, or the check will miss it. That is not a hole today.
+
+### 3. One Publisher is acceptable
+
+A Publisher may replace a live file alone. That is the same trust as publishing a page. Do not add a second person for the swap.
+
+### The sentence I sign
+
+Do not launch until the nine boxes in `LAUNCH-READINESS.md` are ticked.
+
+The Editor file-swap is no longer part of that sentence. The nine boxes are still the client's, on the real server. I will not tick them from here. Neither should you.

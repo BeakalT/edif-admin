@@ -57,7 +57,41 @@ Findings are in `review/grok-findings.md`. Each one was checked against the code
 |---|---|---|
 | G-03/G-04 follow-up: remove `'unsafe-inline'` from the production CSP `script-src` | P0 | **Done 18 Nov.** Per-visit nonce with `'strict-dynamic'` on the site and the admin (`src/proxy.ts`). Pages now render per visit; published content is cached across visits and cleared on every change (`src/lib/siteCache.ts`), ~7–19 ms per page. Verified: every executable script carries the nonce; API and database suites pass. `tests/e2e/security.spec.ts` checks the header, a fresh nonce per visit, no CSP violations on site and admin pages, and that an injected script does not run |
 | G-05 follow-up: files attached only to unpublished drafts can be downloaded by anyone who knows the exact filename | P1 | Open. Listing is now staff-only. Full fix: serve files only when a published document uses them |
-| G-10: set `TRUSTED_PROXY_HOPS` (or `CLIENT_IP_HEADER`) to match the real proxy in front of the app, and make sure the app cannot be reached around that proxy | P0 | Open, deployment step. X-Real-IP is no longer trusted by default |
-| G-11 follow-up: log failed authenticator codes (wrong code after a correct password) | P1 | Open. Needs a hook around the two-factor plugin's verify step |
-| G-12: knowing a staff email is enough to lock that account for 15 minutes | P1 | **Decision.** Options: CAPTCHA or proof-of-work on sign-in after a failure, a per-account backoff, or a separate admin hostname restricted at the network (already decision 2, which mostly removes this) |
-| G-14: high-severity dependency advisories do not fail CI | P1 | Already a recorded decision above (Payload's rich-text chain). Revisit when Payload ships fixes |
+| G-10: set `TRUSTED_PROXY_HOPS` (or `CLIENT_IP_HEADER`) to match the real proxy in front of the app, and make sure the app cannot be reached around that proxy | P0 | **Enforced in code 18 Nov.** The code default is 0 (no forwarding header believed). A production start on a public https address **refuses to boot** unless a hop count above 0 or `CLIENT_IP_HEADER` is set (`src/lib/env.ts`). A local run on localhost is exempt. |
+| G-11 follow-up: log failed authenticator codes (wrong code after a correct password) | P1 | **Done 18 Nov.** `logFailedCodes` (src/lib/twoFactor.ts) wraps the plugin's verify endpoint and writes a security row to the audit log. Test: `tests/unit/logFailedCodes.test.ts`. |
+| G-12: knowing a staff email is enough to lock that account for 15 minutes | P1 | **Closed by network, not code (Grok's advice, 18 Nov).** No CAPTCHA, `maxLoginAttempts` unchanged (the authenticator-code lock reads the same number). The admin address must be reachable from staff networks only: see launch checks below. Emergency unlock: `scripts/unlock-account.ts`. |
+| G-14: high-severity dependency advisories do not fail CI | P1 | **Done 18 Nov.** `scripts/audit-gate.mjs` fails CI on any high or critical advisory not in `.github/audit-allowlist.json`, and on any allow-list row past its review date (next: 16 Feb 2027). |
+
+
+## Grok security audit, 18 Nov 2026 (`review/grok-audit-findings.md`)
+| Finding | Status |
+|---|---|
+| S-01 password or role change leaves other sessions valid | **Fixed.** Own password change keeps only the current session; role change signs the person out everywhere. Tests in `scripts/test-review-fixes.ts`. |
+| S-02 one Publisher can publish a banner with an off-site link | **Fixed (partly).** Only a Super Admin can link a banner to another website. A Publisher can still publish a banner alone with text and an on-site link (decision: speed for urgent notices). |
+| S-03 demo script with known passwords | **Fixed.** Refuses to run unless `DATABASE_URL` is a local SQLite file and not production. Before handover, confirm no `@edif-demo.test` accounts exist in the live database. |
+| S-04 search has no rate limit | **Fixed.** 30 searches a minute per address (per instance). |
+| S-05 visit counter accepts any path | **Partly fixed.** At most 1000 distinct paths per day, and rows older than `PAGEVIEW_KEEP_DAYS` (default 400) are deleted by the hourly job. A unique index on day and path was not added: see Pushed back. |
+| S-06 retention and privacy notice | Open: needs the client's lawyer. |
+| S-07 Postgres backups | Open: needs an operations decision (encrypted dump, off-site copy, restore drill). |
+| S-08 limits per process | Open: record that launch runs one container, or add limits at the proxy. |
+| S-09 security.txt and legal pages | Open: needs a monitored address and the client's text. |
+
+
+## Launch checks (tick before go-live)
+- [ ] `TRUSTED_PROXY_HOPS` or `CLIENT_IP_HEADER` matches the real proxy, and the app is not reachable around that proxy.
+- [ ] The admin hostname accepts connections from staff networks only. If it does not, the account-lockout risk (G-12) is still open: anyone who knows a staff email can lock that account for 15 minutes.
+- [ ] At least two Super Admin accounts exist. Unlock in the panel is Super Admin only; if all are locked, a server operator runs `npx payload run scripts/unlock-account.ts <email>` (clears the password lock and the authenticator-code lock). Named operator: ______
+- [ ] The live database has no account whose email ends in `@edif-demo.test`.
+- [ ] `REVALIDATE_TOKEN` is at least 32 characters. `COOKIE_SECURE` is not set (production refuses `false`).
+- [ ] One app instance at launch: rate limits live in memory (`src/proxy.ts`), so a second instance doubles them.
+- [ ] No unpublished PDF (tender pack, draft minutes, draft report) is uploaded before go-live. Files download by their exact address even when only a draft uses them (G-05).
+- [ ] PostgreSQL backups, encryption and a restore drill are arranged. `scripts/backup.mjs` covers SQLite only.
+- [ ] Privacy text, terms and `security.txt` are written with the client's lawyer and a monitored address. They are not drafted here.
+
+Note: an Editor cannot replace the file of an existing media item (`src/collections/Media.ts`); one Publisher alone can, which is the same trust as publishing a page. Accepted.
+
+## Pushed back (Claude's notes to Grok's final check, 18 Nov)
+- **Counting only failed sign-ins in `src/proxy.ts` (item 3).** The proxy runs before the request is handled and cannot see the response, so it cannot tell a failure from a success. Done instead: separate counters for sign-in, code check and authenticator removal (30, 30 and 10 per 15 minutes per address); the account lock and the authenticator-code lock are what stop guessing. A count of failures would need a hook inside the login route.
+- **PDF download check (item 6).** Not shipped. It changes how every file is served, and a wrong check would break published PDFs on the public site. Launch rule above instead; build it with the three tests Grok named in the first month.
+- **Unique index on visit counts (item 12).** Not added. Creating it needs a PostgreSQL migration that first merges existing duplicate rows, and a failed index creation on a live or demo database would stop the schema update. The race only splits one day's counter into two rows and the daily cap is overshot by at most the number of simultaneous requests. Retention is done.
+- **Admin look (item 13, design brief section 6).** Held for the client's decision, because the client asked for no unrequested design changes and has just had visual changes rolled back. Before and after screenshots first.

@@ -24,8 +24,12 @@ const esc = (t: string) => t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
  * Limits are kept in memory per server instance. With several instances, also rate-limit at the CDN/WAF (see RUNBOOKS).
  * The visitor address comes from lib/clientIp.ts, which does not trust headers the visitor can forge.
  */
-const RULES: { test: RegExp; max: number; windowMs: number }[] = [
-  { test: /^\/api\/(users\/login|verify-totp|remove-totp)$/, max: 12, windowMs: 15 * 60 * 1000 },
+const RULES: { test: RegExp; max: number; windowMs: number; method?: string; needs?: string }[] = [
+  { test: /^\/search$/, max: 30, windowMs: 60 * 1000, method: 'GET', needs: 'q' },
+  // each step has its own counter, so a sign-in (password, then code) does not use up the other budgets. A successful request is counted too (this layer cannot see the answer); the account lock and the code-attempt lock are what stop guessing.
+  { test: /^\/api\/users\/login$/, max: 30, windowMs: 15 * 60 * 1000 },
+  { test: /^\/api\/verify-totp$/, max: 30, windowMs: 15 * 60 * 1000 },
+  { test: /^\/api\/remove-totp$/, max: 10, windowMs: 15 * 60 * 1000 },
   { test: /^\/api\/users\/(forgot-password|reset-password)$/, max: 6, windowMs: 60 * 60 * 1000 },
   { test: /^\/internal\/revalidate$/, max: 10, windowMs: 15 * 60 * 1000 },
 ]
@@ -64,8 +68,8 @@ export function proxy(req: NextRequest) {
       return new NextResponse(body, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Retry-After': '1800', 'Cache-Control': 'no-store', ...(isProd ? { 'Content-Security-Policy': cspFor(btoa(crypto.randomUUID())) } : {}) } })
     }
   }
-  if (req.method === 'POST') {
-    const rule = RULES.find((r) => r.test.test(pathname))
+  {
+    const rule = RULES.find((r) => r.test.test(pathname) && (r.method || 'POST') === req.method && (!r.needs || req.nextUrl.searchParams.has(r.needs)))
     if (rule) {
       const key = `${rule.test.source}|${ipOf(req)}`
       const now = Date.now()

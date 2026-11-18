@@ -2,7 +2,16 @@ import type { CollectionConfig } from 'payload'
 import { canDelete, canWriteContent, isStaff } from '../access'
 import { reviewFields } from '../fields/review'
 import { contentHooks } from '../hooks/publishGuard'
+import { APIError, type CollectionBeforeChangeHook } from 'payload'
 import { validateLink } from '../lib/safeUrl'
+import { ctxOf, staffOf } from '@/lib/reqTypes'
+
+/** A banner is on every page and depositors are told to trust it, so only a Super Admin may point it at another website. */
+const localLinksOnly: CollectionBeforeChangeHook = ({ data, req }) => {
+  if (ctxOf(req)?.seeding) return data
+  if (/^https?:\/\//i.test(String(data?.linkUrl || '').trim()) && staffOf(req)?.role !== 'admin') throw new APIError('Only a Super Admin can link a banner to another website. Use a page on this site, such as /faq.', 403)
+  return data
+}
 
 /** Site-wide banner for urgent messages (closure, scam warning, payout announcement). A Publisher can switch it on alone, because speed matters. */
 export const Notices: CollectionConfig = {
@@ -13,7 +22,7 @@ export const Notices: CollectionConfig = {
   versions: { drafts: { schedulePublish: true }, maxPerDoc: 0 },
   trash: true,
   custom: { selfPublish: true },
-  hooks: contentHooks,
+  hooks: { ...contentHooks, beforeChange: [localLinksOnly, ...contentHooks.beforeChange] },
   fields: [
     { name: 'message', type: 'text', required: true, maxLength: 220 },
     { name: 'severity', type: 'select', defaultValue: 'info', options: [{ label: 'Information', value: 'info' }, { label: 'Warning', value: 'warning' }, { label: 'Urgent', value: 'urgent' }], admin: { position: 'sidebar' } },

@@ -1,0 +1,7 @@
+{
+  "note": "High advisories we have looked at and accepted for now. Each row names the advisory, the package and a date by which it must be looked at again (90 days at most). CI fails on any high or critical advisory that is not listed, and on any row past its date. Reason for all rows: reached only through Payload's rich-text package (lexical -> happy-dom); the app never passes visitor input to it.",
+  "accepted": [
+    { "advisory": "GHSA-834v-8h66-3h79", "package": "happy-dom", "reviewBy": "2027-02-16" },
+    { "advisory": "GHSA-c8p4-j97h-3vg8", "package": "happy-dom", "reviewBy": "2027-02-16" }
+  ]
+}

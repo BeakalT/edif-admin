@@ -84,6 +84,8 @@ Open Audit log. The tabs filter by kind (Edits, Publishing, Sign-ins, Security, 
 ## Emergency two-factor reset (nobody can sign in as Super Admin)
 Normally a Super Admin resets someone's two-factor in Users. If the only Super Admin lost their phone, whoever controls the server runs:
 `npx payload run scripts/reset-2fa.ts admin@example.org`
+
+Locked out after failed sign-ins (every Super Admin locked)? A server operator runs `npx payload run scripts/unlock-account.ts admin@example.org`. It clears the password lock and the authenticator-code lock, and is written to the audit log. Keep at least two Super Admin accounts; name who may run this command in `LAUNCH-READINESS.md`.
 It clears the authenticator, unlocks the account and ends its sessions. The person signs in with their password and scans a new QR code. The reset is recorded in the audit log as "two-factor reset from the server console". Keep server access limited to the few people who may do this.
 
 ## Adding photos of board members and management
