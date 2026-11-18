@@ -13,7 +13,7 @@ export const Media: CollectionConfig = {
   access: {
     // Visitors may download a file by its exact address (the website links to them), but only signed-in staff
     // may list or search the library, so files that no published page links to yet cannot be discovered.
-    read: ({ req, isReadingStaticFile }: any) => isReadingStaticFile === true || passedTwoFactor(req.payload, req.user),
+    read: ({ req, isReadingStaticFile }) => isReadingStaticFile === true || passedTwoFactor(req.payload, req.user),
     create: ({ req }) => hasRole(req.user, 'admin', 'publisher', 'editor', 'seo'),
     update: canWriteContent,
     delete: canDelete,

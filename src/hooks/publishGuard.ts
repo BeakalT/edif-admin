@@ -1,6 +1,6 @@
 import { ctxOf, staffOf } from '@/lib/reqTypes'
 import { APIError } from 'payload'
-import type { CollectionBeforeDeleteHook } from 'payload'
+import type { CollectionBeforeDeleteHook, CollectionSlug } from 'payload'
 import type { CollectionBeforeChangeHook } from 'payload'
 import { canPublish } from '../access'
 import { notifyUser } from '../lib/notify'
@@ -59,7 +59,7 @@ const guardPublish: CollectionBeforeChangeHook = async ({ data, req, collection,
     if (!canPublish(user)) throw new APIError('Only a Publisher can restore items from the trash.', 403)
     if (user?.role !== 'admin' && originalDoc?.id != null) {
       const { deletedAt: _skip, ...rest } = data
-      const latest: any = await req.payload.findByID({ collection: collection.slug as any, id: originalDoc.id, draft: true, overrideAccess: true, depth: 0, trash: true })
+      const latest = await req.payload.findByID({ collection: collection.slug as CollectionSlug, id: originalDoc.id, draft: true, overrideAccess: true, depth: 0, trash: true })
       if (changedContent(rest, latest)) throw new APIError(COMBINED, 400)
     }
     return data
@@ -76,7 +76,7 @@ const guardPublish: CollectionBeforeChangeHook = async ({ data, req, collection,
   const unpublishing = !isDraft && wasPublished && data?._status === 'draft'
   // Unpublishing takes content offline. Edits sent with it would be saved without review, so refuse them.
   if (unpublishing && user?.role !== 'admin') {
-    const latest: any = await req.payload.findByID({ collection: collection.slug as any, id: originalDoc.id, draft: true, overrideAccess: true, depth: 0 })
+    const latest = await req.payload.findByID({ collection: collection.slug as CollectionSlug, id: originalDoc.id, draft: true, overrideAccess: true, depth: 0 })
     if (changedContent(data, latest)) throw new APIError(COMBINED, 400)
   }
   if (touchesLive && !unpublishing && !(collection as any).custom?.selfPublish) {

@@ -94,10 +94,10 @@ export const Users: CollectionConfig = {
   ],
   hooks: {
     afterOperation: [
-      async ({ operation, result, req }: any) => {
+      async ({ operation, result, req }) => {
         // a completed reset link is not an "update", so neither the audit diff nor the password-changed email covered it
-        if (operation === 'resetPassword' && result?.user?.email) {
-          const u = result.user
+        const u = operation === 'resetPassword' ? (result as { user?: { id: string | number; email: string; role?: string } } | undefined)?.user : undefined
+        if (u?.email) {
           await audit(req, { action: 'security', documentId: String(u.id), documentTitle: u.email, changes: { event: { to: 'password set through reset link' } } }, u.email, u.role)
           notifyUser(req.payload, u.email, 'Your password was changed', ['The password for your EDIF admin account was just set using a reset link.', 'If this was not you, contact your Super Admin immediately.'])
         }

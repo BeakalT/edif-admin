@@ -1,4 +1,4 @@
-import type { Block, Field } from 'payload'
+import type { Block, Field, FieldAccess } from 'payload'
 import { hasRole } from '../access'
 import { band, homeHero, nextLinks, pageHero, sectionBlock, withLabel } from './design'
 
@@ -14,7 +14,8 @@ export const sectionFields: Field[] = [
   ] },
 ]
 // both: without `create`, Payload accepts these fields from any role on a new page
-const superAdminOnly = { create: ({ req }: any) => hasRole(req.user, 'admin'), update: ({ req }: any) => hasRole(req.user, 'admin') }
+const superAdminField: FieldAccess = ({ req }) => hasRole(req.user, 'admin')
+const superAdminOnly = { create: superAdminField, update: superAdminField }
 
 const link = [
   { name: 'label', type: 'text', required: true },
