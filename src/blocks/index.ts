@@ -13,7 +13,8 @@ export const sectionFields: Field[] = [
     { name: 'hidden', type: 'checkbox', label: 'Hide this section (keeps it, visitors do not see it)', defaultValue: false },
   ] },
 ]
-const superAdminOnly = { update: ({ req }: any) => hasRole(req.user, 'admin') }
+// both: without `create`, Payload accepts these fields from any role on a new page
+const superAdminOnly = { create: ({ req }: any) => hasRole(req.user, 'admin'), update: ({ req }: any) => hasRole(req.user, 'admin') }
 
 const link = [
   { name: 'label', type: 'text', required: true },
