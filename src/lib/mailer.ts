@@ -27,7 +27,7 @@ const outbox = {
 export const emailAdapter = () => {
   const host = process.env.SMTP_HOST
   const transport = host
-    ? nodemailer.createTransport({ host, port: Number(process.env.SMTP_PORT || 587), secure: Number(process.env.SMTP_PORT) === 465, auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined })
+    ? nodemailer.createTransport({ host, port: Number(process.env.SMTP_PORT || 587), secure: Number(process.env.SMTP_PORT) === 465, requireTLS: Number(process.env.SMTP_PORT) !== 465 && process.env.SMTP_ALLOW_PLAIN !== 'true', auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined })
     : nodemailer.createTransport(outbox as any)
   return nodemailerAdapter({ defaultFromAddress: process.env.MAIL_FROM || 'no-reply@edif-cms.org', defaultFromName: 'EDIF Admin', transport })
 }

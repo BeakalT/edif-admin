@@ -22,17 +22,17 @@ services:
     cap_drop: ["ALL"]
   db:
     image: postgres:16-alpine
-    environment: { POSTGRES_USER: edif, POSTGRES_PASSWORD: change-me-locally, POSTGRES_DB: edif }
+    environment: { POSTGRES_USER: edif, POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in your shell or a .env file}", POSTGRES_DB: edif }
     volumes: ["pgdata:/var/lib/postgresql/data"]
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U edif"], interval: 5s, timeout: 3s, retries: 10 }
     restart: unless-stopped
   minio:
     image: minio/minio
     command: server /data --console-address ":9001"
-    environment: { MINIO_ROOT_USER: edifminio, MINIO_ROOT_PASSWORD: change-me-locally }
+    environment: { MINIO_ROOT_USER: edifminio, MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in your shell or a .env file}" }
     volumes: ["minio:/data"]
-    ports: ["9001:9001"]
+    ports: ["127.0.0.1:9001:9001"] # console on this machine only
   mail:
     image: axllent/mailpit
-    ports: ["8025:8025"]
+    ports: ["127.0.0.1:8025:8025"] # holds password-reset links: this machine only
 volumes: { pgdata: {}, minio: {}, web-data: {} }
