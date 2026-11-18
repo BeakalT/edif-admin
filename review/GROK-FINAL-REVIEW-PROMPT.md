@@ -29,10 +29,26 @@ For each of G-01 to G-14, read the fix and try to break it. Examples of what to 
 ## Part C: anything new
 Anything serious you did not report the first time.
 
+## Part D: UI and UX review
+The site is running at http://localhost:3100 (the admin sign-in is at http://localhost:3100/admin). If you have a browser tool, open the site there and look at it at desktop and phone widths; otherwise review the components in `src/site/` and `src/components/admin/`. You cannot sign in to the admin (it needs a second factor), so review the admin from its sign-in page and its code. Do not submit forms that change data.
+
+This is the public website of the Ethiopian Deposit Insurance Fund. Its main audience is ordinary depositors, many on low-end phones and slow networks, who need to know quickly whether their money is protected and what to do if their bank fails. The admin is used daily by staff who are used to WordPress.
+
+Look for problems that would hurt those people, for example:
+- Is it clear within a few seconds what EDIF does, whether a deposit is covered, and how to check?
+- Navigation, information architecture, page order and labels: can someone find coverage, payout, member banks and contact details without guessing?
+- Layout at phone widths: overflow, overlapping text or numbers, tap targets, readability.
+- Forms and the coverage calculator: clear labels, errors, results a non-expert understands.
+- Accessibility problems that automated checks miss: focus order, link text, headings, contrast on images, motion.
+- Consistency: spacing, type, buttons, icons, tone of the copy.
+- Admin: anything confusing or risky for an editor (the two-step review, publish, trash, custom HTML).
+
+Report UI and UX issues as U-01, U-02 and so on, each with: page or component, what is wrong, who it affects, and a concrete fix. Severity: High (stops a task or misleads), Medium (slows people down), Low (polish).
+
 ## Output format for `review/grok-final-findings.md`
 Start with a **fix verification table**: ID, your verdict (Fixed / Partly fixed / Not fixed / Regressed), one-line reason.
 
-Then new findings, numbered F-01, F-02 and so on, in the same format as before:
+Then new security or code findings, numbered F-01, F-02 and so on, in the same format as before:
 
 ```
 ### F-01 — <short title>
@@ -44,5 +60,7 @@ Problem: …
 Exploit or failure scenario: …
 Suggested fix: …
 ```
+
+Then the UI and UX findings (U-01 …).
 
 End with **Areas checked with no issues**, one line each.
