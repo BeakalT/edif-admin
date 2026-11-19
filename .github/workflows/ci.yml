@@ -39,7 +39,7 @@ jobs:
       - name: Fail on any high advisory that is not on the reviewed allow-list
         run: node scripts/audit-gate.mjs
       - name: Secret scan
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
