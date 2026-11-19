@@ -41,7 +41,7 @@ test('a forged X-Forwarded-For cannot dodge the sign-in rate limit', async ({ re
   // Our proxy appends the real address on the right. Varying the forged left side must not give a fresh allowance.
   const realTail = `10.77.${Math.floor(Math.random() * 200)}.${Math.floor(Math.random() * 200)}`
   let limited = 0
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 35; i++) { // the limit is 30 per 15 minutes per address (src/proxy.ts)
     const r = await request.post('/api/users/login', { headers: { 'x-forwarded-for': `203.0.113.${i}, ${realTail}`, origin: process.env.BASE_URL || 'http://localhost:3100' }, data: { email: 'nobody@edif-cms.org', password: 'wrong-password-' + i } })
     if (r.status() === 429) limited++
   }
@@ -72,14 +72,21 @@ test('the strict policy blocks nothing the site and admin need, and blocks injec
     expect(await page.evaluate(() => document.readyState)).toBe('complete')
   }
   expect(violations, violations.join('\n')).toEqual([])
-  // a script injected without the nonce must not run
+  // markup an attacker gets into the page must not run: an inline event handler, and an inline <script> without the nonce.
+  // (A script created by the page's own trusted code is allowed by 'strict-dynamic' on purpose, so it is not tested here.)
   await page.goto('/')
-  const ran = await page.evaluate(() => new Promise<boolean>((done) => {
-    const w = window as unknown as { __injected?: boolean }
-    w.__injected = false
-    const s = document.createElement('script'); s.textContent = 'window.__injected = true'
-    document.body.appendChild(s)
-    setTimeout(() => done(w.__injected === true), 300)
+  const handlerRan = await page.evaluate(() => new Promise<boolean>((done) => {
+    const w = window as unknown as { __h?: boolean }
+    w.__h = false
+    const d = document.createElement('div'); d.innerHTML = '<img src="x" onerror="window.__h = true">'; document.body.appendChild(d)
+    setTimeout(() => done(w.__h === true), 400)
   }))
-  expect(ran).toBe(false)
+  expect(handlerRan).toBe(false)
+  const inlineRan = await page.evaluate(() => new Promise<boolean>((done) => {
+    const w = window as unknown as { __s?: boolean }
+    w.__s = false
+    document.write('<script>window.__s = true</script>')
+    setTimeout(() => done(w.__s === true), 300)
+  }))
+  expect(inlineRan).toBe(false)
 })
