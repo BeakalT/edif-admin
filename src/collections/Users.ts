@@ -7,6 +7,7 @@ import { ROLES, adminOnly, clientIp, hasRole } from '../access'
 import { auditChange, auditDelete, auditLogin, auditLogout } from '../hooks/audit'
 import { checkPassword } from '../lib/passwordPolicy'
 import { mailHtml, notifyRoles, notifyUser } from '../lib/notify'
+import { recoveryEndpoints } from '../lib/recoveryEndpoints'
 
 const SITE = () => process.env.SITE_URL || 'http://localhost:3100'
 const INVITE_MS = 48 * 60 * 60 * 1000
@@ -77,6 +78,7 @@ export const Users: CollectionConfig = {
     admin: ({ req }) => !!req.user,
   },
   endpoints: [
+    ...recoveryEndpoints,
     adminEndpoint('send-invite', async (req, id, target) => {
       await req.payload.forgotPassword({ collection: 'users', data: { email: target.email }, expiration: INVITE_MS, disableEmail: false })
       await audit(req, { action: 'security', documentId: id, documentTitle: target.email, changes: { event: { to: 'password setup email sent' } } })
@@ -208,6 +210,9 @@ export const Users: CollectionConfig = {
     },
     { name: 'lastLoginAt', label: 'Last sign-in', type: 'date', admin: { readOnly: true, position: 'sidebar', date: { pickerAppearance: 'dayAndTime' } }, access: { update: () => false, create: () => false } },
     { name: 'lastLoginIp', label: 'Last sign-in address', type: 'text', admin: { readOnly: true, position: 'sidebar' }, access: { read: ({ req }) => hasRole(req.user, 'admin', 'auditor'), update: () => false, create: () => false } },
+    // one-time two-factor recovery codes (hashed); never readable or writable through the API, only by lib/recoveryEndpoints.ts
+    { name: 'recovery', type: 'json', hidden: true, access: { read: () => false, create: () => false, update: () => false } },
+    { name: 'recoveryCodes', type: 'ui', admin: { components: { Field: '/components/admin/RecoveryCodes#RecoveryCodes' } } },
     { name: 'accountActions', type: 'ui', admin: { components: { Field: '/components/admin/AccountActions#AccountActions' } } },
   ],
 }

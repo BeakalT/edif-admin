@@ -80,13 +80,15 @@ Findings are in `review/grok-findings.md`. Each one was checked against the code
 ## Launch checks (tick before go-live)
 - [ ] `TRUSTED_PROXY_HOPS` or `CLIENT_IP_HEADER` matches the real proxy, and the app is not reachable around that proxy.
 - [ ] The admin hostname accepts connections from staff networks only. If it does not, the account-lockout risk (G-12) is still open: anyone who knows a staff email can lock that account for 15 minutes.
-- [ ] At least two Super Admin accounts exist. Unlock in the panel is Super Admin only; if all are locked, a server operator runs `npx payload run scripts/unlock-account.ts <email>` (clears the password lock and the authenticator-code lock). Named operator: ______
+- [ ] At least two Super Admin accounts exist, and each has created their recovery codes (account page) and keeps them outside the phone. Unlock in the panel is Super Admin only; if all are locked, a server operator runs `npx payload run scripts/unlock-account.ts <email>` (clears the password lock and the authenticator-code lock). Named operator: ______
 - [ ] The live database has no account whose email ends in `@edif-demo.test`.
 - [ ] `REVALIDATE_TOKEN` is at least 32 characters. `COOKIE_SECURE` is not set (production refuses `false`).
 - [ ] One app instance at launch: rate limits live in memory (`src/proxy.ts`), so a second instance doubles them.
 - [ ] No unpublished PDF (tender pack, draft minutes, draft report) is uploaded before go-live. Files download by their exact address even when only a draft uses them (G-05).
 - [ ] PostgreSQL backups, encryption and a restore drill are arranged. `scripts/backup.mjs` covers SQLite only.
 - [ ] Privacy text, terms and `security.txt` are written with the client's lawyer and a monitored address. They are not drafted here.
+
+Note: two-factor recovery codes (added 19 Nov): each person can create ten one-time codes on their own account page and use one at `/account-recovery` with their password to remove a lost authenticator and enrol a new one. Codes are stored as salted scrypt hashes; five wrong codes block further tries for 15 minutes; use is audit-logged and alerts the other Super Admins. The page and `/api/users/recovery/*` must be reachable from staff networks only, like sign-in (G-12). The email-link last resort is not built yet.
 
 Note: an Editor cannot replace the file of an existing media item (`src/collections/Media.ts`); one Publisher alone can, which is the same trust as publishing a page. Accepted.
 

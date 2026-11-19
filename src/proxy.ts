@@ -30,6 +30,7 @@ const RULES: { test: RegExp; max: number; windowMs: number; method?: string; nee
   { test: /^\/api\/users\/login$/, max: 30, windowMs: 15 * 60 * 1000 },
   { test: /^\/api\/verify-totp$/, max: 30, windowMs: 15 * 60 * 1000 },
   { test: /^\/api\/remove-totp$/, max: 10, windowMs: 15 * 60 * 1000 },
+  { test: /^\/api\/users\/recovery\/(use|codes)$/, max: 10, windowMs: 15 * 60 * 1000 },
   { test: /^\/api\/users\/(forgot-password|reset-password)$/, max: 6, windowMs: 60 * 60 * 1000 },
   { test: /^\/internal\/revalidate$/, max: 10, windowMs: 15 * 60 * 1000 },
 ]
@@ -61,7 +62,7 @@ const cspFor = (nonce: string) => [
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
-  if (!new RegExp(`^(${ADMIN_ROUTE}|/api|/_next|/images|/fonts|/media|/stats|/healthz|/readyz|/internal)(/|$)`).test(pathname)) {
+  if (!new RegExp(`^(${ADMIN_ROUTE}|/api|/_next|/images|/fonts|/media|/stats|/healthz|/readyz|/internal|/account-recovery)(/|$)`).test(pathname)) {
     const m = maintenance()
     if (m.on) {
       const body = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Back soon | Ethiopian Deposit Insurance Fund</title><style>body{font-family:system-ui,sans-serif;background:#1E3570;color:#fff;min-height:100vh;display:grid;place-items:center;margin:0;text-align:center;padding:24px}main{max-width:560px}h1{margin:0 0 12px}p{line-height:1.6;opacity:.9}</style></head><body><main><h1>We will be back soon</h1><p>${esc(m.msg || 'The website is being updated. Please try again shortly.')}</p><p>Ethiopian Deposit Insurance Fund</p></main></body></html>`

@@ -26,6 +26,7 @@ import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0
 import { StatusTabs as StatusTabs_4e0edc318a712408d652448dba8dc79e } from '../../../components/admin/StatusTabs'
 import { NullButton as NullButton_a27e5b393680870bfada1154babe3c8a } from '../../../components/admin/NullButton'
 import { ImportBar as ImportBar_67cf523ca65ba2b62b23d6f32e5dcf13 } from '../../../components/admin/ImportBar'
+import { RecoveryCodes as RecoveryCodes_43c30919611f069a63a0aff35f9170f5 } from '../../../components/admin/RecoveryCodes'
 import { AccountActions as AccountActions_b564369a058367a481e030d85bf60b21 } from '../../../components/admin/AccountActions'
 import { TOTPField as TOTPField_4eaf6cb33cfb75be01716613e3c9a512 } from 'payload-totp/rsc'
 import { ChangesView as ChangesView_baa768919e718a60f2c58c25b4d43688 } from '../../../components/admin/ChangesView'
@@ -75,6 +76,7 @@ export const importMap = {
   "/components/admin/StatusTabs#StatusTabs": StatusTabs_4e0edc318a712408d652448dba8dc79e,
   "/components/admin/NullButton#NullButton": NullButton_a27e5b393680870bfada1154babe3c8a,
   "/components/admin/ImportBar#ImportBar": ImportBar_67cf523ca65ba2b62b23d6f32e5dcf13,
+  "/components/admin/RecoveryCodes#RecoveryCodes": RecoveryCodes_43c30919611f069a63a0aff35f9170f5,
   "/components/admin/AccountActions#AccountActions": AccountActions_b564369a058367a481e030d85bf60b21,
   "payload-totp/rsc#TOTPField": TOTPField_4eaf6cb33cfb75be01716613e3c9a512,
   "/components/admin/ChangesView#ChangesView": ChangesView_baa768919e718a60f2c58c25b4d43688,

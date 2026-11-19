@@ -5,7 +5,7 @@ import { clientIp } from '../access'
 import { revalidateChange, revalidateDelete } from './revalidate'
 import { notifyRoles } from '../lib/notify'
 
-const SKIP = new Set(['updatedAt', 'createdAt', 'id', 'sizes', 'hash', 'salt', 'password', 'totpSecret', 'hasTotp', 'loginAttempts', 'lockUntil', 'resetPasswordToken', 'resetPasswordExpiration', 'resetPasswordRequestedAt', 'sessions', 'lastSeenAt'])
+const SKIP = new Set(['updatedAt', 'createdAt', 'id', 'sizes', 'hash', 'salt', 'password', 'totpSecret', 'hasTotp', 'recovery', 'loginAttempts', 'lockUntil', 'resetPasswordToken', 'resetPasswordExpiration', 'resetPasswordRequestedAt', 'sessions', 'lastSeenAt'])
 const short = (v: unknown) => {
   const s = typeof v === 'string' ? v : JSON.stringify(v)
   return s && s.length > 300 ? s.slice(0, 300) + '…' : s

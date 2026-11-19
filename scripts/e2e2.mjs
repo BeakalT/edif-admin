@@ -123,6 +123,48 @@ r = await adm.api('POST', `/users/${p2id}/reset-2fa`); ok('reset signs the perso
 const p2 = new Client('publisher2'); await p2.login()
 ok('after a reset they must enrol again before getting access', (await p2.api('GET', '/news')).s === 403)
 
+// ---------- two-factor recovery codes ----------
+{
+  const rc = new Client('editor2'); await rc.login()
+  ok('recovery codes need a session that has entered its code', (await rc.api('POST', '/users/recovery/codes', { password: U.editor2.password })).s === 403)
+  r = await rc.verify(); ok('recovery test account signs in with its code', r.s === 200, r.s)
+  r = await rc.api('GET', '/users/recovery/status'); ok('a new account has no recovery codes', r.s === 200 && r.j.remaining === 0, JSON.stringify(r.j))
+  r = await rc.api('POST', '/users/recovery/codes', { password: 'not-the-password' }); ok('creating codes asks for the password again', r.s === 400, r.s)
+  r = await rc.api('POST', '/users/recovery/codes', { password: U.editor2.password })
+  const codes = r.j.codes || []
+  ok('ten recovery codes are created and shown once', r.s === 200 && codes.length === 10 && codes.every((c) => /^[A-HJ-NP-Z2-9]{5}-[A-HJ-NP-Z2-9]{5}$/.test(c)), r.s)
+  r = await rc.api('GET', '/users/recovery/status'); ok('status counts them without showing them', r.j.remaining === 10 && !JSON.stringify(r.j).includes(codes[0]))
+  const me = await rc.api('GET', '/users/me'); ok('the stored codes never come back through the API', me.s === 200 && !('recovery' in (me.j.user || {})) && !JSON.stringify(me.j).includes('"codes"'))
+  const lst = await adm.api('GET', '/users?limit=50&depth=0'); ok('…not even to a Super Admin listing users', lst.s === 200 && !JSON.stringify(lst.j).includes('"recovery"'))
+  const anon = new Client(null)
+  const bad1 = await anon.api('POST', '/users/recovery/use', { email: U.editor2.email, password: 'wrong-password', code: codes[0] })
+  const bad2 = await anon.api('POST', '/users/recovery/use', { email: U.editor2.email, password: U.editor2.password, code: 'AAAAA-AAAAA' })
+  const bad3 = await anon.api('POST', '/users/recovery/use', { email: 'nobody@edif-cms.org', password: 'x', code: codes[0] })
+  ok('wrong password, wrong code and unknown email all get the same refusal', bad1.s === 400 && bad2.s === 400 && bad3.s === 400 && bad1.j.message === bad2.j.message && bad2.j.message === bad3.j.message, `${bad1.s} ${bad2.s} ${bad3.s}`)
+  ok('a refusal never touches the account (the old session still works)', (await rc.api('GET', '/news')).s === 200)
+  const used = await anon.api('POST', '/users/recovery/use', { email: U.editor2.email, password: U.editor2.password, code: codes[0].toLowerCase().replace('-', ' ') })
+  ok('a correct password and code remove the authenticator', used.s === 200 && used.j.ok === true && used.j.remaining === 9, JSON.stringify(used.j).slice(0, 120))
+  ok('…and sign the person out everywhere', (await rc.api('GET', '/news')).s === 403)
+  const again = await new Client(null).api('POST', '/users/recovery/use', { email: U.editor2.email, password: U.editor2.password, code: codes[0] })
+  ok('a code works only once', again.s === 400)
+  const re = new Client('editor2'); await re.login()
+  r = await re.api('POST', '/verify-totp', { token: code(U.editor2.totpSecret) }); ok('the old authenticator no longer works', r.j.ok === false || r.s >= 400, JSON.stringify(r.j).slice(0, 80))
+  ok('…and the password alone still gives no access', (await re.api('GET', '/news')).s === 403)
+  // five wrong codes block further tries for 15 minutes, even with a good code
+  const hammer = new Client(null)
+  ok('with no authenticator enrolled, recovery has nothing to reset', (await hammer.api('POST', '/users/recovery/use', { email: U.editor2.email, password: U.editor2.password, code: codes[1] })).s === 400)
+}
+{
+  // blocking after five wrong codes: needs a second account with codes, so use the editor test account of this run
+  const rb = new Client('editor'); await rb.full()
+  const made = await rb.api('POST', '/users/recovery/codes', { password: U.editor.password })
+  const good = made.j.codes || []
+  const h = new Client(null)
+  for (let i = 0; i < 5; i++) await h.api('POST', '/users/recovery/use', { email: U.editor.email, password: U.editor.password, code: 'BBBBB-BBBBB' })
+  const blocked = await h.api('POST', '/users/recovery/use', { email: U.editor.email, password: U.editor.password, code: good[0] })
+  ok('five wrong codes block further tries, even with a good code', blocked.s === 400 && (await rb.api('GET', '/news')).s === 200, blocked.s)
+}
+
 // ---------- public site still fine ----------
 ok('home page loads', (await site('/')).s === 200)
 const med = await fetch(B + '/api/media?limit=1', { headers: { 'x-forwarded-for': nextIp() } }); ok('visitors cannot list the media library (review G-05)', med.status === 403, med.status)

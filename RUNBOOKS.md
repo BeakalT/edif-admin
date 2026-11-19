@@ -82,7 +82,7 @@ When the main site is down (or about to be taken down for a long repair), a plai
 Open Audit log. The tabs filter by kind (Edits, Publishing, Sign-ins, Security, Deletions) and each row is a plain sentence. Open a row for the before/after table. Locked accounts also raise a bell alert for Super Admins and Auditors. Export to CSV from the box above the list.
 
 ## Emergency two-factor reset (nobody can sign in as Super Admin)
-Normally a Super Admin resets someone's two-factor in Users. If the only Super Admin lost their phone, whoever controls the server runs:
+First choice, no help needed: the person uses one of their own recovery codes at `/account-recovery` (email, password, code). It removes their authenticator, signs them out everywhere, writes "two-factor reset with a recovery code" to the audit log and alerts the other Super Admins. Every Super Admin creates their codes right after first sign-in (their own account page). The proxy must treat `/account-recovery` like sign-in: reachable from staff networks only (a Super Admin abroad uses the Fund's VPN). Normally a Super Admin resets someone's two-factor in Users. If the only Super Admin lost their phone, whoever controls the server runs:
 `npx payload run scripts/reset-2fa.ts admin@example.org`
 
 Locked out after failed sign-ins (every Super Admin locked)? A server operator runs `npx payload run scripts/unlock-account.ts admin@example.org`. It clears the password lock and the authenticator-code lock, and is written to the audit log. Keep at least two Super Admin accounts; name who may run this command in `LAUNCH-READINESS.md`.

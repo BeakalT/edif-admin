@@ -18,10 +18,11 @@ For Super Admins, Publishers, Editors, SEO Managers and Auditors. Written in pla
 
 1. Open `/admin`. Enter your email and password.
 2. First time only: scan the QR code with an authenticator app (Google Authenticator, Microsoft Authenticator, Authy) and enter the 6-digit code.
-3. Every sign-in asks for the code. Sessions end after 2 hours.
-4. Five wrong passwords lock the account for 15 minutes. A Super Admin can unlock it.
-5. Passwords: at least 12 characters, upper and lower case, a number and a symbol, nothing guessable (no "ethiopia", "edif", names, repeats).
-6. Lost phone: ask a Super Admin to use **Reset two-factor** on your account. You set it up again at next sign-in.
+3. **Right after that, create your recovery codes**: open your own account page (your name, top right), enter your password under "Recovery codes" and press **Create recovery codes**. Save the ten codes in your password manager or print them and lock them away. They are shown once. Each works once.
+4. Every sign-in asks for the code. Sessions end after 2 hours.
+5. Five wrong passwords lock the account for 15 minutes. A Super Admin can unlock it.
+6. Passwords: at least 12 characters, upper and lower case, a number and a symbol, nothing guessable (no "ethiopia", "edif", names, repeats).
+7. **Lost, replaced or forgotten phone:** go to `/account-recovery` (also linked on the sign-in page), enter your email, password and one recovery code. Your old authenticator is removed and every session ends. Sign in with your password and scan the new QR code. Then create a fresh set of recovery codes. No codes? Ask another Super Admin to use **Reset two-factor** on your account, or the server operator (RUNBOOKS, "Emergency two-factor reset"). Moving to a new phone while the old one still works: move the account inside the authenticator app (Google Authenticator "Transfer accounts", Microsoft Authenticator backup, Authy sync), no reset needed.
 
 ## 3. The dashboard
 
@@ -153,5 +154,5 @@ Run a second copy of the site on another address with its own database and `.env
 | "File is still used by…" | Replace it where it is used first |
 | "Not readable enough" (colours) | Choose a darker main colour |
 | Locked out | Wait 15 minutes or ask a Super Admin to unlock |
-| Lost phone | Super Admin → Reset two-factor |
+| Lost phone | `/account-recovery` with a recovery code, or Super Admin → Reset two-factor |
 | Site shows "back soon" | Maintenance mode is on |

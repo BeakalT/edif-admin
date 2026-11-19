@@ -15,7 +15,7 @@ Follow `RUNBOOKS.md` §1 and §2, plus these steps, which those sections leave o
 4. **Never run `scripts/demo-users.ts` or the demo seed against this database.** They create accounts with known passwords. Check 4 proves none exist.
 5. Checks 4, 5 and 7 are about **production**: run them against the live database, environment and media library, not staging.
 6. **Second Super Admin** is created before launch (Check 3), not after.
-7. **Block the sign-in URL on the public host.** The lockout (G-12) is five failed passwords on `POST /api/users/login`, and that URL exists on the public site too. At the proxy, allow `/api/users/*` and the admin path (on the public name as well as the admin hostname) only from staff networks, and answer everyone else with 403 or drop the connection. Write the rule here: ______
+7. **Block the sign-in URL on the public host.** The lockout (G-12) is five failed passwords on `POST /api/users/login`, and that URL exists on the public site too. At the proxy, allow `/api/users/*` (this includes `/api/users/recovery/*`), `/account-recovery` and the admin path (on the public name as well as the admin hostname) only from staff networks, and answer everyone else with 403 or drop the connection. Write the rule here: ______
 8. Back up, migrate, start, run `post-deploy.mjs` (token supplied as an environment variable, see Check 8).
 9. `/readyz` = 200 only proves the process can reach its database. It does not prove the public site, TLS or any check below.
 
@@ -30,6 +30,7 @@ Evidence: ______
 Run from a network that is **not** a staff network (a phone on mobile data). Use the real admin path, not `/admin`, if it was changed.
 A. Admin hostname: `curl -m 8 -sS -o /dev/null -w '%{http_code}\n' https://$ADMIN$ADMIN_PATH/login`. Pass **only** if the connection is refused or times out. (On a refused connection curl prints `000` and exits non-zero: that `000` is a pass, not an HTTP status.) Any real status, including 403 and 404, means the host answered: fail.
 A2. Admin path on the public name: `curl -m 8 -sS -o /dev/null -w '%{http_code}\n' https://$SITE_HOST$ADMIN_PATH/login` (where `$SITE_HOST` is the public hostname, e.g. `www.edif.gov.et`). Pass: refused, timed out, or a proxy `403`. A page that loads means the admin is public.
+B2. **Recovery page on the public host:** `curl -m 8 -sS -o /dev/null -w '%{http_code}\n' https://$SITE_HOST/account-recovery` from a non-staff network. Pass: refused, timed out, or a proxy `403`. It posts to `/api/users/recovery/use`, which has the same lockout exposure as sign-in.
 B. **Sign-in URL on the public host** (this is what the lockout risk actually uses): `curl -m 8 -sS -o /dev/null -w '%{http_code}\n' -X POST $SITE/api/users/login -H 'content-type: application/json' -d '{"email":"nobody@example.org","password":"x"}'`. Pass: refused, timed out, or a 403 produced by the proxy rule from Part 0 step 6. A `401` or `400` means the request reached the app: fail.
 C. From a staff network both the admin sign-in page and sign-in work.
 Evidence: ______  (If A passes but B fails, anyone who knows a staff email can still lock that account for 15 minutes: G-12 stays open, do not tick.)

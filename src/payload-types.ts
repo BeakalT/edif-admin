@@ -1830,6 +1830,15 @@ export interface User {
   role: 'admin' | 'publisher' | 'editor' | 'seo' | 'auditor';
   lastLoginAt?: string | null;
   lastLoginIp?: string | null;
+  recovery?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   totpSecret?: string | null;
   hasTotp?: boolean | null;
   updatedAt: string;
@@ -3544,6 +3553,7 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   lastLoginAt?: T;
   lastLoginIp?: T;
+  recovery?: T;
   totpSecret?: T;
   hasTotp?: T;
   updatedAt?: T;

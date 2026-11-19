@@ -11,6 +11,7 @@ const suites = {
     ['role permissions matrix', ['npx', 'tsx', `--env-file=${ENV}`, 'scripts/test-permissions.ts']],
     ['in-app notifications', ['npx', 'tsx', `--env-file=${ENV}`, 'scripts/test-notifications.ts']],
     ['independent review fixes (G-01 to G-13)', ['npx', 'tsx', `--env-file=${ENV}`, 'scripts/test-review-fixes.ts']],
+    ['two-factor recovery codes', ['npx', 'tsx', `--env-file=${ENV}`, 'scripts/test-recovery.ts']],
   ],
   api: [
     ['refresh test accounts', ['npx', 'tsx', `--env-file=${ENV}`, 'scripts/mkusers.ts'], { silent: true }],
