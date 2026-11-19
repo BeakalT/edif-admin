@@ -111,5 +111,5 @@ jobs:
         run: |
           docker run --rm --entrypoint sh edif-web:ci -c '! find /app -maxdepth 2 \( -name ".env*" -o -name "*.db" -o -name backups -o -name media \) | grep .'
       - name: Vulnerability scan of the image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with: { image-ref: 'edif-web:ci', severity: 'CRITICAL', exit-code: '1', ignore-unfixed: true }
