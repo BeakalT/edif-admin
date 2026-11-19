@@ -24,7 +24,7 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ['.next/', 'node_modules/', 'src/payload-types.ts', 'src/payload-generated-schema.ts', 'src/migrations/**', 'scripts/**', 'backups/**', 'media/**'],
+    ignores: ['.next/', '.dashboard-preview/', 'node_modules/', 'src/payload-types.ts', 'src/payload-generated-schema.ts', 'src/migrations/**', 'scripts/**', 'backups/**', 'media/**'],
   },
 ]
 

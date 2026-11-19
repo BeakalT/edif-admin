@@ -3,5 +3,6 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [tsconfigPaths()],
-  test: { environment: 'node', include: ['tests/unit/**/*.test.ts'], testTimeout: 15_000 },
+  esbuild: { jsx: 'automatic' },
+  test: { environment: 'node', include: ['tests/unit/**/*.test.{ts,tsx}'], testTimeout: 15_000 },
 })

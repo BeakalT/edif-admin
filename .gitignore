@@ -61,3 +61,4 @@ playwright-report/
 # Local database (demo data, user accounts)
 *.db
 *.db-*
+.dashboard-preview/
