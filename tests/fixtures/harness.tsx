@@ -5,7 +5,7 @@ import { sampleDays, sampleActivity } from './sample'
 
 // Mounts the interactive parts on their own so a browser test can click them without a server.
 createRoot(document.getElementById('root')!).render(
-  <div className="edif-dash">
+  <div className="edif-board">
     <ul className="edif-att" style={{ listStyle: 'none' }}><Snoozable id="test:row"><a href="#row">A tender closing soon</a></Snoozable></ul>
     <VisitsPanel days={sampleDays()} />
     <ActivityFeed items={sampleActivity()} href="#log" />

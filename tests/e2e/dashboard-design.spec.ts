@@ -35,10 +35,9 @@ test.describe('dashboard: the interactive parts', () => {
   test('visits: 7 / 30 day switch and picking a day', async ({ page }) => {
     await page.goto(url('harness-light.html'))
     const panel = page.locator('.edif-pane--visits')
-    await expect(panel.getByRole('heading', { name: 'Visits, last 7 days' })).toBeVisible()
+    await expect(panel.getByRole('heading', { name: 'Visits' })).toBeVisible()
     await expect(panel.locator('.edif-bars__col')).toHaveCount(7)
     await panel.getByRole('button', { name: '30 days' }).click()
-    await expect(panel.getByRole('heading', { name: 'Visits, last 30 days' })).toBeVisible()
     await expect(panel.locator('.edif-bars__col')).toHaveCount(30)
     await panel.locator('.edif-bars__col').nth(10).click()
     await expect(panel.getByRole('button', { name: 'Show whole period' })).toBeVisible()

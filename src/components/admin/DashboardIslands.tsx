@@ -1,7 +1,14 @@
 'use client'
 import React, { useMemo, useState, useSyncExternalStore } from 'react'
 import { I } from './dashIcons'
-import { ACTION_ICON, byDay, hhmm, type ActivityItem, type DayStat } from './dashFormat'
+import { byDay, hhmm, type ActivityItem, type DayStat } from './dashFormat'
+
+const pageName = (p: string) => {
+  if (!p || p === '/') return 'Home'
+  const seg = decodeURIComponent(p.replace(/^\//, '').split('/')[0] || '')
+  if (!seg) return 'Home'
+  return seg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
 
 const sum = (l: DayStat[]) => l.reduce((a, d) => a + d.n, 0)
 const topOf = (list: DayStat[]) => {
@@ -24,24 +31,22 @@ export const VisitsPanel: React.FC<{ days: DayStat[] }> = ({ days }) => {
   const top = picked ? topOf([picked]) : v.top
   const max = top[0]?.[1] || 1
   const dense = v.cur.length > 7
+  const peakAt = v.cur.reduce((best, d, i) => (d.n >= v.cur[best].n ? i : best), 0)
   return (
-    <section className="edif-pane edif-pane--visits">
-      <header>
-        <span className="edif-pane__badge edif-pane__badge--blue"><I n="chart" /></span>
-        <h4>Visits, last {range} days</h4>
+    <section className="edif-pane edif-pane--visits edif-board__sheet">
+      <header className="edif-board__vhead">
+        <h3>Visits</h3>
+        <span className="edif-board__total">{v.total} this {range === 7 ? 'week' : 'month'}</span>
         <div className="edif-seg" role="group" aria-label="Time range">
-          {([7, 30] as const).map((r) => <button key={r} type="button" aria-pressed={range === r} onClick={() => { setRange(r); setSel(null) }}>{r} days</button>)}
+          <button type="button" aria-pressed={range === 7} onClick={() => { setRange(7); setSel(null) }}>Week</button>
+          <button type="button" aria-pressed={range === 30} onClick={() => { setRange(30); setSel(null) }}>30 days</button>
         </div>
       </header>
-      <div className="edif-pane__big">{v.total}<small>visits</small>
-        {v.delta !== null && <span className={'edif-delta ' + (v.delta >= 0 ? 'is-up' : 'is-down')}><I n={v.delta >= 0 ? 'up' : 'down'} />{Math.abs(v.delta)}%<em>vs previous {range} days</em></span>}
-      </div>
       <div className={'edif-bars' + (dense ? ' is-dense' : '')} style={{ gridTemplateColumns: `repeat(${v.cur.length}, 1fr)` }} role="group" aria-label="Visits per day. Choose a day to see its top pages.">
         {v.cur.map((d, k) => (
           <button type="button" key={d.key} aria-pressed={sel === d.key} aria-label={`${d.label} ${d.date}: ${d.n} visits`} title={`${d.label} ${d.date}: ${d.n}`}
-            className={'edif-bars__col' + (k === v.cur.length - 1 ? ' is-today' : '') + (sel === d.key ? ' is-picked' : '')} onClick={() => setSel(sel === d.key ? null : d.key)}>
-            <span className="edif-bars__n">{d.n || ''}</span>
-            <i style={{ height: `${Math.max(d.n ? 8 : 3, (d.n / v.peak) * 100)}%` }} />
+            className={'edif-bars__col' + (k === peakAt && d.n > 0 ? ' is-peak' : '') + (!d.n ? ' is-empty' : '') + (sel === d.key ? ' is-picked' : '')} onClick={() => setSel(sel === d.key ? null : d.key)}>
+            <i style={{ height: d.n ? `${Math.max(8, (d.n / v.peak) * 100)}%` : undefined }} />
             <em>{dense ? (k % 5 === 0 || k === v.cur.length - 1 ? d.date.split(' ')[0] : '') : d.label}</em>
           </button>
         ))}
@@ -49,7 +54,7 @@ export const VisitsPanel: React.FC<{ days: DayStat[] }> = ({ days }) => {
       <p className="edif-pane__sub" aria-live="polite">
         {picked ? <><strong>{picked.label} {picked.date}</strong> · {picked.n} {picked.n === 1 ? 'visit' : 'visits'}<button type="button" onClick={() => setSel(null)}>Show whole period</button></> : 'Top pages'}
       </p>
-      {top.length ? <ul className="edif-top">{top.map(([p, n]) => <li key={p}><span>{p}</span><b>{n}</b><i style={{ width: `${Math.max(3, (n / max) * 100)}%` }} /></li>)}</ul> : <p className="edif-att__ok">No visits recorded for this period.</p>}
+      {top.length ? <ul className="edif-board__ranks">{top.map(([p, n]) => <li key={p}><span>{pageName(p)}</span><i><b style={{ width: `${Math.max(4, (n / max) * 100)}%` }} /></i><b>{n}</b></li>)}</ul> : <p className="edif-board__clear">No visits recorded for this period.</p>}
     </section>
   )
 }
@@ -67,25 +72,28 @@ export const ActivityFeed: React.FC<{ items: ActivityItem[]; href: string }> = (
   const [f, setF] = useState('all')
   const chips = FILTERS.map((x) => ({ ...x, n: items.filter((i) => x.test(i.action)).length })).filter((x) => x.k === 'all' || x.n > 0)
   const active = chips.find((c) => c.k === f) || chips[0]
-  const shown = items.filter((i) => active.test(i.action))
+  const shown = items.filter((i) => active.test(i.action)).slice(0, 6)
   return (
-    <section className="edif-tl">
-      <div className="edif-chips" role="group" aria-label="Filter activity">
-        {chips.map((c) => <button key={c.k} type="button" aria-pressed={active.k === c.k} onClick={() => setF(c.k)}>{c.l}<b>{c.n}</b></button>)}
-      </div>
+    <section className="edif-tl edif-board__sheet">
+      <header className="edif-board__acthead">
+        <h3>Recent activity</h3>
+        <div className="edif-seg" role="group" aria-label="Filter activity">
+          {chips.map((c) => <button key={c.k} type="button" aria-pressed={active.k === c.k} onClick={() => setF(c.k)}>{c.l}<b>{c.n}</b></button>)}
+        </div>
+      </header>
       {byDay(shown).map((d) => (
         <div className="edif-tl__day" key={d.label}>
           <h4>{d.label}</h4>
           <ol>{d.items.map((g) => (
             <li key={g.id} className={`edif-tl__i edif-tl__i--${g.action}`}>
-              <span className="edif-tl__dot"><I n={ACTION_ICON[g.action] || 'changes'} /></span>
-              <div><p>{g.text}{g.count > 1 && <b className="edif-tl__x">×{g.count}</b>}</p><time dateTime={g.at}>{hhmm(g.at)}</time></div>
+              <p>{g.text}{g.count > 1 ? ` (${g.count})` : ''}</p>
+              <time dateTime={g.at}>{hhmm(g.at)}</time>
             </li>
           ))}</ol>
         </div>
       ))}
-      {!shown.length && <p className="edif-att__ok">Nothing of this kind in the latest events.</p>}
-      <a className="edif-tl__all" href={href}>Full activity log<I n="arrow" /></a>
+      {!shown.length && <p className="edif-board__clear">Nothing of this kind in the latest events.</p>}
+      <a className="edif-board__more" href={href}>Full activity log</a>
     </section>
   )
 }
