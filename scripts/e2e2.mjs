@@ -112,7 +112,7 @@ ok('audit entries carry a readable summary', r.j.docs.every((d) => typeof d.summ
 r = await adm.api('POST', `/users/unlock`, { email: U.seo.email }); ok('only Super Admin can unlock (admin does)', r.s === 200, r.s)
 r = await ed.api('POST', '/users/unlock', { email: U.seo.email }); ok('an editor cannot unlock accounts', r.s === 403, r.s)
 const rl = new Client(null); let got429 = false
-for (let i = 0; i < 16; i++) { const x = await rl.login('nobody@edif-cms.org', 'x'); if (x.s === 429) got429 = true }
+for (let i = 0; i < 35; i++) { const x = await rl.login('nobody@edif-cms.org', 'x'); if (x.s === 429) got429 = true } // limit is 30 per 15 minutes per address (src/proxy.ts)
 ok('rapid sign-in attempts from one address are throttled (429)', got429)
 
 // ---------- reset two-factor ----------
