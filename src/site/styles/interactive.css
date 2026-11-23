@@ -2,12 +2,12 @@
 
 /* ===== coverage calculator ===== */
 .calc-out .meter .ok{background:linear-gradient(90deg,var(--gold),#E3C877)}
-.calc-out .meter .over{background:repeating-linear-gradient(-45deg,rgba(255,255,255,.85) 0 4px,rgba(255,255,255,.3) 4px 8px)}
+.calc-out .meter .over{background:repeating-linear-gradient(-45deg,#FFB4A8 0 4px,#E0766A 4px 8px)}
 
 .split{position:relative;display:flex;height:10px;margin-top:20px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
 .split i{display:block;height:100%;transition:width .8s var(--ease)}
 .split-ok{background:linear-gradient(90deg,var(--gold),#E3C877)}
-.split-over{background:repeating-linear-gradient(-45deg,rgba(255,255,255,.85) 0 4px,rgba(255,255,255,.3) 4px 8px)}
+.split-over{background:repeating-linear-gradient(-45deg,#FFB4A8 0 4px,#E0766A 4px 8px)}
 .split.is-empty{height:8px;margin-top:22px}
 .split-lim{position:absolute;right:0;top:0;bottom:0;width:2px;background:var(--gold-pale)}
 .motion .calc-out .split:not(.is-empty){animation:meterIn 1s var(--ease) both}
@@ -64,3 +64,9 @@
   [data-sonner-toast],[data-sonner-toast] *{transition:none!important;animation:none!important}
   .dt-btn{transition:none}
 }
+
+/* Not protected: a light coral on navy (about 9:1), clearly not the gold used for protected amounts. Always paired with the words "not protected". */
+.calc-out .t-side.warn b,.calc-out .t-side.warn .t-k,.calc-out .warn-t{color:#FFB4A8}
+.calc-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.calc-actions .calc-copybtn{margin-top:0}
+.calc-flash{min-height:1.4em;margin-top:10px;font-size:.88rem;color:#CFE3F7}

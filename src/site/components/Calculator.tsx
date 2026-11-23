@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
 import { useCms } from '../cms-context'
 import { LIMIT } from '../data/content'
 import { Tween } from './motion'
@@ -20,9 +19,26 @@ export default function Calculator() {
   const MFIS = microfinance.map((m) => m.name)
   const [rows, setRows] = useState<Row[]>([{ i: '', b: 0 }])
   const [example, setExample] = useState(false)
+  const [note, setNote] = useState('')
+  const noteT = useRef<ReturnType<typeof setTimeout>>(undefined)
   const [focusIdx, setFocusIdx] = useState<number | null>(null)
   const box = useRef<HTMLDivElement>(null)
   const calcRef = useRef<HTMLDivElement>(null)
+
+  // Restore a shared link (?calc=[["Institution",amount],...]). Only known institutions and sane amounts are accepted.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('calc')
+    if (!q) return
+    const known = new Set([...banks.map((b) => b.name), ...microfinance.map((m) => m.name)])
+    let next: Row[] = []
+    try {
+      const arr = JSON.parse(q)
+      if (Array.isArray(arr)) next = arr.slice(0, 12).filter((x) => Array.isArray(x) && known.has(x[0]) && Number.isFinite(x[1]) && x[1] > 0 && x[1] < 1e12).map((x) => ({ i: String(x[0]), b: Math.round(x[1]) }))
+    } catch { /* ignore a malformed link */ }
+    if (!next.length) return
+    const id = requestAnimationFrame(() => setRows(next))
+    return () => cancelAnimationFrame(id)
+  }, [banks, microfinance])
 
   const update = (n: number, patch: Partial<Row>) => {
     setRows((r) => r.map((x, k) => (k === n ? { ...x, ...patch } : x)))
@@ -46,17 +62,20 @@ export default function Calculator() {
     return { k, g, p, o, pw: (p / scale) * 100, ow: (o / scale) * 100, lim: (LIMIT / scale) * 100 }
   })
   const total = prot + over
-  const settled = total > 0 && pending === 0
-  useEffect(() => {
-    if (!settled) return
-    const t = setTimeout(() => toast.success(`Birr ${fmt(prot)} protected` + (over ? `, Birr ${fmt(over)} not protected` : ', nothing above the limit'), { id: 'calc-result', duration: 5000 }), 1400)
-    return () => clearTimeout(t)
-  }, [settled, prot, over])
-  const copyResult = async () => {
+  const flash = (msg: string) => { setNote(msg); clearTimeout(noteT.current); noteT.current = setTimeout(() => setNote(''), 3500) }
+  const copy = async (text: string, ok: string) => {
+    try { await navigator.clipboard.writeText(text); flash(ok) } catch { flash('Could not copy. You can select the text and copy it instead.') }
+  }
+  const copyResult = () => {
     const lines = list.map(({ k, g, p, o }) => `${k}: Birr ${fmt(g.t)} (protected Birr ${fmt(p)}${o ? `, not protected Birr ${fmt(o)}` : ''})`)
-    const text = `EDIF coverage estimate\n${lines.join('\n')}\nProtected: Birr ${fmt(prot)}. Not protected: Birr ${fmt(over)}.\nAn estimate only: the Fund confirms each depositor's amount at payout.`
-    try { await navigator.clipboard.writeText(text); toast.success('Result copied', { id: 'calc-copy', duration: 3000 }) }
-    catch { toast.error('Could not copy. You can select the figures and copy them instead.', { id: 'calc-copy' }) }
+    return copy(`EDIF coverage estimate\n${lines.join('\n')}\nProtected: Birr ${fmt(prot)}. Not protected: Birr ${fmt(over)}.\nAn estimate only: the Fund confirms each depositor's amount at payout.`, 'Result copied')
+  }
+  const copyLink = () => {
+    const data = rows.filter((r) => r.i && r.b > 0).map((r) => [r.i, r.b])
+    const url = new URL(window.location.href)
+    url.search = ''; url.hash = ''
+    if (data.length) url.searchParams.set('calc', JSON.stringify(data))
+    return copy(url.toString(), data.length ? 'Link copied. It holds the institutions and amounts you entered.' : 'Link copied')
   }
   const dirty = rows.length > 1 || rows.some((r) => r.i || r.b)
 
@@ -149,7 +168,13 @@ export default function Calculator() {
           </ul>
         )}
         {pending > 0 && groups.size > 0 && <p className="pending">{pending === 1 ? '1 account needs' : pending + ' accounts need'} an institution before it can be counted.</p>}
-        {groups.size > 0 && <button type="button" className="calc-copybtn" onClick={copyResult}>Copy result</button>}
+        {groups.size > 0 && (
+          <div className="calc-actions">
+            <button type="button" className="calc-copybtn" onClick={copyResult}>Copy result</button>
+            <button type="button" className="calc-copybtn" onClick={copyLink}>Copy link</button>
+          </div>
+        )}
+        <p className="calc-flash" role="status">{note}</p>
         <p className="calc-note">An estimate only. At payout, the Fund nets off any matured loans and deposits held as collateral, and confirms each depositor’s amount.</p>
       </div>
     </div>

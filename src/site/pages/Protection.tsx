@@ -160,9 +160,9 @@ export function Coverage() {
 export function CalculatorPage() {
   const { faqs } = useCms()
   const examples = [
-    { t: 'One account', rows: [['Savings at Bank A', 80000]], prot: 80000, over: 0, note: 'Below the limit, so all of it is protected.' },
-    { t: 'Two accounts, same bank', rows: [['Savings at Bank A', 70000], ['Time deposit at Bank A', 50000]], prot: 100000, over: 20000, note: 'Added together: Birr 120,000. Birr 20,000 is above the limit.' },
-    { t: 'Accounts at two banks', rows: [['Savings at Bank A', 90000], ['Savings at Bank B', 90000]], prot: 180000, over: 0, note: 'Each bank is protected separately, so both are covered in full.' },
+    { t: 'One account', rows: [['Savings at Commercial Bank of Ethiopia', 80000]], prot: 80000, over: 0, note: 'Below the limit, so all of it is protected.' },
+    { t: 'Two accounts, same bank', rows: [['Savings at Commercial Bank of Ethiopia', 70000], ['Time deposit at Commercial Bank of Ethiopia', 50000]], prot: 100000, over: 20000, note: 'Added together: Birr 120,000. Birr 20,000 is above the limit.' },
+    { t: 'Accounts at two banks', rows: [['Savings at Commercial Bank of Ethiopia', 90000], ['Savings at Awash Bank', 90000]], prot: 180000, over: 0, note: 'Each bank is protected separately, so both are covered in full.' },
   ] as const
   const f = (n: number) => n.toLocaleString('en-US')
   return (

@@ -1,12 +1,18 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { Toaster, toast } from 'sonner'
 import { useLocation } from '../router'
 
-/** Quiet navy-and-gold toasts. Dismissible, never trap focus, and never the only place a message appears. */
+const MQ = '(max-width: 800px)'
+const subscribe = (cb: () => void) => { const m = window.matchMedia(MQ); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb) }
+const useNarrow = () => useSyncExternalStore(subscribe, () => window.matchMedia(MQ).matches, () => false)
+
+/** Quiet navy-and-gold toasts, top-right on desktop and top-center on phones, tucked under the sticky header so they never sit on the calculator result or a section heading. Dismissible, never trap focus, never the only place a message appears. */
 export function SiteToaster() {
+  const narrow = useNarrow()
   return (
-    <Toaster position="bottom-center" closeButton offset={20} visibleToasts={3}
+    <Toaster position={narrow ? 'top-center' : 'top-right'} closeButton visibleToasts={2}
+      offset={{ top: 108, right: 24 }} mobileOffset={{ top: 84, left: 16, right: 16 }}
       toastOptions={{ classNames: { toast: 'st', title: 'st-title', description: 'st-desc', closeButton: 'st-close', success: 'st-ok' } }} />
   )
 }
