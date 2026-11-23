@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { cx } from '@/utils/cx'
 
 const SHEET = 'edif-bui edif-rise rounded-[18px] border border-[var(--sheet-line)] bg-[var(--sheet)] p-5 shadow-[0_10px_28px_rgba(16,32,64,.07)]'
@@ -78,24 +78,90 @@ export function Inbox({ items, total, href }: { items: InboxItem[]; total: numbe
   )
 }
 
-export type WeekDay = { label: string; num: string; today: boolean; events: { text: string; kind: 'close' | 'publish' }[] }
-export function WeekStrip({ days }: { days: WeekDay[] }) {
-  const any = days.some((d) => d.events.length)
+export type CalEvent = { date: string; kind: 'close' | 'event' | 'publish'; label: string; title: string; href: string; time?: string }
+const KIND: Record<CalEvent['kind'], { dot: string; name: string }> = {
+  close: { dot: '#C29B38', name: 'Closing date' },
+  event: { dot: '#2875BA', name: 'Event' },
+  publish: { dot: '#1E3570', name: 'Scheduled to publish' },
+}
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const key = (y: number, m: number, d: number) => new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10)
+const parse = (k: string) => { const [y, m, d] = k.split('-').map(Number); return { y, m: m - 1, d } }
+const addDays = (k: string, n: number) => { const { y, m, d } = parse(k); return key(y, m, d + n) }
+const pretty = (k: string) => { const { y, m, d } = parse(k); return new Date(Date.UTC(y, m, d)).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) }
+
+/** A month calendar: dots show what falls on each day, a click (or arrow keys) opens that day's list. Closing dates, events and scheduled publishes. */
+export function DashCalendar({ events, todayKey }: { events: CalEvent[]; todayKey: string }) {
+  const t = parse(todayKey)
+  const [view, setView] = useState({ y: t.y, m: t.m })
+  const [sel, setSel] = useState(todayKey)
+  const grid = useRef<HTMLDivElement>(null)
+  const byDay = useMemo(() => { const m = new Map<string, CalEvent[]>(); for (const e of events) m.set(e.date, [...(m.get(e.date) || []), e]); return m }, [events])
+  const first = new Date(Date.UTC(view.y, view.m, 1))
+  const lead = (first.getUTCDay() + 6) % 7
+  const total = new Date(Date.UTC(view.y, view.m + 1, 0)).getUTCDate()
+  const cells = Array.from({ length: Math.ceil((lead + total) / 7) * 7 }, (_, i) => key(view.y, view.m, i - lead + 1))
+  const inMonth = (k: string) => parse(k).m === view.m
+  const monthCount = cells.filter((k) => inMonth(k)).reduce((n, k) => n + (byDay.get(k)?.length || 0), 0)
+  const go = (n: number) => setView((v) => { const d = new Date(Date.UTC(v.y, v.m + n, 1)); return { y: d.getUTCFullYear(), m: d.getUTCMonth() } })
+  const pick = (k: string) => { setSel(k); const p = parse(k); if (p.m !== view.m || p.y !== view.y) setView({ y: p.y, m: p.m }); requestAnimationFrame(() => grid.current?.querySelector<HTMLButtonElement>(`[data-k="${k}"]`)?.focus()) }
+  const onKey = (e: React.KeyboardEvent) => {
+    const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key as 'ArrowLeft']
+    if (step) { e.preventDefault(); pick(addDays(sel, step)) }
+  }
+  const chosen = byDay.get(sel) || []
+  const nav = 'flex size-9 items-center justify-center rounded-full border border-[var(--sheet-line)] text-[var(--navy-t)] outline-none hover:bg-[var(--chip)] focus-visible:ring-2 focus-visible:ring-[#2875BA]'
   return (
-    <section className={SHEET}>
-      <h3 className={H}><Dash />This week</h3>
-      <ol className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-2">
-        {days.map((d) => (
-          <li key={d.label + d.num} className={cx('min-h-24 rounded-xl border p-2', d.today ? 'border-[#C29B38] bg-[#C29B38]/10' : 'border-[var(--hair)]')}>
-            <span className="block text-[11px] font-bold tracking-wider text-[var(--ink-3)] uppercase">{d.label}</span>
-            <span className={cx('block text-[18px] leading-tight font-extrabold tabular-nums', d.today ? 'text-[#85660F]' : 'text-[var(--navy-t)]')}>{d.num}</span>
-            <ul className="mt-1.5 space-y-1">
-              {d.events.map((e, i) => <li key={i} className={cx('rounded-md px-1.5 py-0.5 text-[11px] leading-tight font-semibold', e.kind === 'close' ? 'bg-[#9B3D32]/12 text-[#9B3D32]' : 'bg-[#2875BA]/14 text-[#2875BA]')}>{e.text}</li>)}
+    <section className={SHEET} aria-label="Calendar">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className={H}><Dash />Calendar</h3>
+        <div className="flex items-center gap-2">
+          <button type="button" className={nav} onClick={() => go(-1)} aria-label="Previous month">‹</button>
+          <span className="min-w-36 text-center text-[15px] font-bold text-[var(--ink)]" aria-live="polite">{MONTHS[view.m]} {view.y}</span>
+          <button type="button" className={nav} onClick={() => go(1)} aria-label="Next month">›</button>
+          <button type="button" onClick={() => { setView({ y: t.y, m: t.m }); setSel(todayKey) }} className="ms-1 rounded-full border border-[var(--sheet-line)] px-3.5 py-1.5 text-[13px] font-semibold text-[var(--navy-t)] outline-none hover:bg-[var(--chip)] focus-visible:ring-2 focus-visible:ring-[#2875BA]">Today</button>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div>
+          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold tracking-wider text-[var(--ink-3)] uppercase" aria-hidden>{DOW.map((d) => <span key={d} className="py-1">{d}</span>)}</div>
+          <div ref={grid} role="group" aria-label={`${MONTHS[view.m]} ${view.y}`} onKeyDown={onKey} className="grid grid-cols-7 gap-1">
+            {cells.map((k) => {
+              const ev = byDay.get(k) || []
+              const isSel = k === sel, isToday = k === todayKey, mine = inMonth(k)
+              const kinds = [...new Set(ev.map((e) => e.kind))]
+              return (
+                <button key={k} type="button" data-k={k} tabIndex={isSel ? 0 : -1} onClick={() => setSel(k)} aria-pressed={isSel}
+                  aria-label={`${pretty(k)}${isToday ? ', today' : ''}, ${ev.length ? `${ev.length} ${ev.length === 1 ? 'item' : 'items'}` : 'nothing scheduled'}`}
+                  className={cx('relative flex aspect-square min-h-11 flex-col items-center justify-center gap-1 rounded-xl text-[14px] font-semibold tabular-nums outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#2875BA]',
+                    isSel ? 'bg-[#1E3570] text-white' : mine ? 'text-[var(--ink)] hover:bg-[var(--chip)]' : 'text-[var(--ink-3)]/60 hover:bg-[var(--chip)]',
+                    isToday && !isSel && 'ring-2 ring-[#C29B38]')}>
+                  <span>{parse(k).d}</span>
+                  <span className="flex h-1.5 gap-0.5" aria-hidden>{kinds.map((kd) => <i key={kd} className="size-1.5 rounded-full" style={{ background: isSel ? '#E6D7A6' : KIND[kd].dot }} />)}</span>
+                </button>
+              )
+            })}
+          </div>
+          <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[var(--ink-2)]">
+            {(Object.keys(KIND) as CalEvent['kind'][]).map((kd) => <li key={kd} className="flex items-center gap-1.5"><i className="size-2 rounded-full" style={{ background: KIND[kd].dot }} aria-hidden />{KIND[kd].name}</li>)}
+          </ul>
+        </div>
+        <div className="rounded-xl border border-[var(--hair)] p-4" aria-live="polite">
+          <p className="text-[12px] font-bold tracking-[.12em] text-[#85660F] uppercase">{sel === todayKey ? 'Today' : 'Selected day'}</p>
+          <p className="mt-0.5 text-[16px] font-bold text-[var(--ink)]">{pretty(sel)}</p>
+          {chosen.length ? (
+            <ul className="mt-3 divide-y divide-[var(--hair)]">
+              {chosen.map((e, i) => (
+                <li key={i} className="flex gap-3 py-2.5">
+                  <i className="mt-1.5 size-2.5 shrink-0 rounded-full" style={{ background: KIND[e.kind].dot }} aria-hidden />
+                  <a href={e.href} className="min-w-0 no-underline"><span className="block text-[12px] font-semibold text-[var(--ink-2)]">{e.label}{e.time ? `, ${e.time}` : ''}</span><span className="block text-[14px] font-semibold text-[var(--ink)]">{e.title}</span></a>
+                </li>
+              ))}
             </ul>
-          </li>
-        ))}
-      </ol>
-      {!any && <p className="mt-3 text-[14px] text-[var(--ink-2)]">A quiet week: nothing closes and nothing is scheduled to publish.</p>}
+          ) : <p className="mt-3 text-[14px] text-[var(--ink-2)]">{monthCount ? 'Nothing on this day.' : 'A quiet month: no closing dates, events or scheduled publishes.'}</p>}
+        </div>
+      </div>
     </section>
   )
 }

@@ -11,7 +11,7 @@ import { I } from './dashIcons'
 import { DashStats, DashVisits, type DashStat } from './DashBui'
 import { QuickActions, ClosingSoon, HealthRings, Pipeline, Activity, CommandPalette, type Quick, type Cmd } from './DashBlocks'
 import { ago } from './dashFormat'
-import { Resume, Inbox, WeekStrip, PulseNotes, type ResumeItem, type InboxItem, type WeekDay } from './DashMore'
+import { Resume, Inbox, DashCalendar, PulseNotes, type ResumeItem, type InboxItem, type CalEvent } from './DashMore'
 
 const REVIEW = ['pages', 'news', 'publications', 'faqs', 'members', 'key-figures', 'tenders', 'vacancies', 'events', 'notices']
 const day = (n: number) => new Date(Date.now() + n * 864e5)
@@ -106,21 +106,26 @@ export default async function Dashboard(props: any) {
   const published = content.reduce((n, c) => n + c.pub, 0)
   const drafts = content.reduce((n, c) => n + c.dr, 0)
 
-  const [draftDocs, inboxDocs] = await Promise.all([
+  const win = { and: [{ _status: { equals: 'published' } }] }
+  const range = (f: string) => [{ [f]: { greater_than: day(-40).toISOString() } }, { [f]: { less_than: day(150).toISOString() } }]
+  const calFind = (collection: string, f: string) => (canEdit ? payload.find({ collection, where: { and: [...win.and, ...range(f)] }, ...sys, limit: 200 }).then((r: any) => r.docs).catch(() => []) : Promise.resolve([]))
+  const [draftDocs, inboxDocs, calT, calV, calE] = await Promise.all([
     canEdit ? Promise.all(CONTENT.map(([slug, label]) => payload.find({ collection: slug, draft: true, where: { _status: { equals: 'draft' } }, sort: '-updatedAt', ...sys, limit: 3 }).then((r: any) => r.docs.map((d: any) => ({ slug, label, id: d.id, title: String(d.title || d.label || d.question || d.name || `Untitled ${label.toLowerCase()}`), at: d.updatedAt as string }))).catch(() => []))) : Promise.resolve([]),
     staffOnly ? payload.find({ collection: 'messages', where: { status: { equals: 'new' } }, sort: '-createdAt', ...sys, limit: 3 }).then((r: any) => r.docs).catch(() => []) : Promise.resolve([]),
+    calFind('tenders', 'closingDate'), calFind('vacancies', 'closingDate'), calFind('events', 'startsAt'),
   ])
   const resume: ResumeItem[] = (draftDocs as any[]).flat().sort((a, b) => +new Date(b.at) - +new Date(a.at)).slice(0, 3).map((d) => ({ title: d.title, kind: d.label.replace(/s$/, ''), href: adminUrl(`/collections/${d.slug}/${d.id}`), ago: ago(d.at) }))
   const inbox: InboxItem[] = (inboxDocs as any[]).map((m) => ({ name: String(m.name || 'Someone'), subject: String(m.subject || m.topic || ''), excerpt: String(m.message || '').replace(/\s+/g, ' ').slice(0, 90), ago: ago(m.createdAt), href: adminUrl(`/collections/messages/${m.id}`) }))
   const ethDate = (() => { try { return new Date().toLocaleDateString('am-ET-u-ca-ethiopic', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Addis_Ababa' }) } catch { return '' } })()
-  const weekDays: WeekDay[] = Array.from({ length: 7 }, (_, k) => {
-    const d = day(k); const key = d.toLocaleDateString('en-CA', { timeZone: 'Africa/Addis_Ababa' })
-    const events: WeekDay['events'] = [
-      ...closing.filter((c) => new Date(c.at).toLocaleDateString('en-CA', { timeZone: 'Africa/Addis_Ababa' }) === key).map((c) => ({ text: `${c.kind} closes`, kind: 'close' as const })),
-      ...(jobs.docs as any[]).filter((j) => j.waitUntil && new Date(j.waitUntil).toLocaleDateString('en-CA', { timeZone: 'Africa/Addis_Ababa' }) === key).map(() => ({ text: 'Scheduled', kind: 'publish' as const })),
-    ]
-    return { label: d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'Africa/Addis_Ababa' }), num: d.toLocaleDateString('en-GB', { day: 'numeric', timeZone: 'Africa/Addis_Ababa' }), today: k === 0, events }
-  })
+  const dk = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Addis_Ababa' })
+  const tm = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Addis_Ababa' })
+  const calEvents: CalEvent[] = [
+    ...(calT as any[]).filter((x) => x.closingDate).map((x) => ({ date: dk(x.closingDate), kind: 'close' as const, label: 'Tender closes', title: String(x.title), href: adminUrl(`/collections/tenders/${x.id}`) })),
+    ...(calV as any[]).filter((x) => x.closingDate).map((x) => ({ date: dk(x.closingDate), kind: 'close' as const, label: 'Vacancy closes', title: String(x.title), href: adminUrl(`/collections/vacancies/${x.id}`) })),
+    ...(calE as any[]).filter((x) => x.startsAt).map((x) => ({ date: dk(x.startsAt), kind: 'event' as const, label: 'Event', title: String(x.title), href: adminUrl(`/collections/events/${x.id}`), time: tm(x.startsAt) })),
+    ...(jobs.docs as any[]).filter((j) => j.waitUntil).map((j) => ({ date: dk(j.waitUntil), kind: 'publish' as const, label: 'Scheduled to publish', title: 'A page or article goes live', href: adminUrl('/collections/pages') })),
+  ]
+  const todayKey = dk(new Date(nowMs()).toISOString())
   const tally = (prefix: string) => { const m: Record<string, number> = {}; for (const d of days60.slice(-7)) for (const [p, n] of Object.entries(d.paths)) if (p.startsWith(prefix)) m[p] = (m[p] || 0) + n; const top = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; return top ? decodeURIComponent(top[0].replace(prefix, '').split('/')[0]).replace(/-/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) : undefined }
   const pulse = {
     wins: content.reduce((n, c) => n + c.wk, 0),
@@ -216,7 +221,7 @@ export default async function Dashboard(props: any) {
         <HealthRings {...health} />
       </div>
 
-      <WeekStrip days={weekDays} />
+      <DashCalendar events={calEvents} todayKey={todayKey} />
 
       <Pipeline p={pipe} />
 
