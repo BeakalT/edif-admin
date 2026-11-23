@@ -9,6 +9,7 @@ import { CountUp, spotlight, useInView } from './motion'
 import { useCms } from '../cms-context'
 import { tel } from '../data/content'
 import { FaqList } from './sections'
+import { BoardCards, type BoardPerson } from './BoardCards'
 import { safeHref } from '../../lib/safeUrl'
 
 /**
@@ -209,29 +210,10 @@ export function OrgChart(p: { board: string; side: string; chain: { text: string
   )
 }
 
-export function Board(p: { people: { name: string; jobTitle: string; photo?: string }[]; seatsTitle?: string; seats?: { text: string }[]; note?: string }) {
-  const [first, ...rest] = p.people
-  const [role, ...org] = (first?.jobTitle || '').split(', ')
+export function Board(p: { people: BoardPerson[]; seatsTitle?: string; seats?: { text: string }[]; note?: string }) {
   return (
     <>
-      {first && (
-        <div className="board">
-          <div className="mcard-hero">
-            <div className="pimg">{first.photo && <img src={first.photo} alt={first.name} />}</div>
-            <div><span className="k">{role}</span><h3>{first.name}</h3><p>{org.join(', ')}</p></div>
-          </div>
-          <ul className="members-list">
-            {rest.map((b) => (
-              <li key={b.name}>
-                {b.photo
-                  ? <span className="initials has-photo"><img src={b.photo} alt={b.name} loading="lazy" /></span>
-                  : <span className="initials">{b.name.replace('Ato ', '').split(' ').map((w) => w[0]).join('')}</span>}
-                <div><strong>{b.name}</strong><span>{b.jobTitle}</span></div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {p.people.length > 0 && <BoardCards people={p.people} />}
       {!!p.seats?.length && (
         <div className="board-seats"><h3>{p.seatsTitle || 'Seats on the Board'}</h3><ul>{T(p.seats).map((s, i) => <li key={i}>{s}</li>)}</ul>{p.note && <p className="source">{p.note}</p>}</div>
       )}

@@ -20,7 +20,7 @@ function Part({ p, cms, people }: { p: any; cms: Cms; people: any[] }) {
     case 'statGrid': return <P.StatGrid items={p.items} columns={p.columns === '4' ? '4' : '6'} buttons={p.buttons} figures={figs(cms)} />
     case 'orgChart': return <P.OrgChart {...p} />
     case 'board': {
-      const list = people.filter((x) => x.group === p.group).map((x) => ({ name: x.name, jobTitle: x.jobTitle, photo: im(x.photo)?.src }))
+      const list = people.filter((x) => x.group === p.group).map((x) => ({ name: x.name, jobTitle: x.jobTitle, photo: im(x.photo)?.src, bio: x.bio ? <RichText state={x.bio} /> : undefined }))
       return <P.Board people={list} seatsTitle={p.seatsTitle} seats={p.seats} note={p.note} />
     }
     case 'profiles': return <P.Profiles people={people.filter((x) => x.group === p.group).map((x) => ({ name: x.name, jobTitle: x.jobTitle, photo: im(x.photo)?.src, bio: x.bio ? <RichText state={x.bio} /> : null }))} />
