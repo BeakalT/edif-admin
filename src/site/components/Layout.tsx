@@ -78,7 +78,7 @@ function Header() {
   const ALL: NavEntry[] = cms.nav ? cms.nav.map(toEntry) : DEFAULT_NAV
   const WORK: NavEntry = { label: 'Work with us', to: '/tenders', children: [
     { to: '/tenders', label: 'Tenders', desc: 'Open procurement notices and the archive' },
-    { to: '/careers', label: 'Jobs', desc: 'Current vacancies at the Fund' },
+    { to: '/vacancies', label: 'Jobs', desc: 'Current vacancies at the Fund' },
   ] }
   const rest = ALL.filter((n) => !/^\/(tenders|jobs|careers|vacanc)/i.test(n.to) && !/^work with us$/i.test(n.label))
   const ci = rest.findIndex((n) => /^\/contact/i.test(n.to))
