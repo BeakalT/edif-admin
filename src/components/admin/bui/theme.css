@@ -49,15 +49,12 @@
    * defaults. The only override is the family: Inter, loaded via next/font
    * in app/layout.tsx, which exposes --font-inter to the document.
    * --------------------------------------------------------------------------*/
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif,
-               "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
-               "Noto Color Emoji";
+  --font-sans: "Nunito Sans", system-ui, sans-serif;
 
   /* Monospace ramp for code blocks. Loaded via next/font in app/layout.tsx
    * (--font-mono-source → JetBrains Mono). Figma's spec uses IBM Plex Mono;
    * JetBrains Mono is the closest already-bundled face. */
-  --font-mono: var(--font-mono-source), ui-monospace, "SFMono-Regular", Menlo,
-               Consolas, "Liberation Mono", monospace;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   /* ----- Radii ---------------------------------------------------------------
    * Extra step between lg (8) and xl (12). Used by medium-size buttons.
@@ -158,7 +155,7 @@
  * blue/red primitives that each Button/{type}/{state} style references in
  * Figma. Direction inferred — confirm visually against Figma.
  * --------------------------------------------------------------------------- */
-:root {
+.edif-bui {
   /* Foreground (icons + on-fill content) */
   --color-foreground-full:               var(--color-white);
   --color-foreground-icon-primary:       var(--color-neutral-950);
@@ -424,7 +421,7 @@
   --gradient-button-danger-disabled:  linear-gradient(180deg, var(--color-red-100) 0%, var(--color-red-200) 100%);
 }
 
-.dark {
+.edif-bui.dark {
   /* Foreground */
   --color-foreground-full:            var(--color-neutral-700);
   --color-foreground-icon-primary:    var(--color-neutral-50);
@@ -639,7 +636,7 @@
 /* Non-default accents (data-accent set by the accent engine) can land on a
  * /950 that glows too loudly against the dark sidebar; halve the NEW badge
  * fill there. Light mode keeps the solid /100 surface. */
-.dark[data-accent] {
+.edif-bui.dark[data-accent] {
   --color-badge-new-background: color-mix(in srgb, var(--color-accent-950) 50%, transparent);
 }
 

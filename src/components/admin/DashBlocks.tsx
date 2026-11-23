@@ -1,5 +1,4 @@
 'use client'
-import './dash.css'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { RiArrowRightLine, RiSearchLine } from '@remixicon/react'
 import { cx } from '@/utils/cx'

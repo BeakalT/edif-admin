@@ -5,9 +5,9 @@
  * text utility — `text-{name}` applies font-size + line-height + letter-spacing
  * + font-weight in one go.
  *
- * Family: Inter for the whole ramp. (The Figma export marks Large Title /
- * Regular as "Inter Display"; we map everything to Inter for consistency since
- * Inter ships a variable optical-size axis. Flag if a true Inter Display load
+ * Family: Nunito Sans for the whole ramp. (The Figma export marks Large Title /
+ * Regular as "Nunito Sans Display"; we map everything to Nunito Sans for consistency since
+ * Nunito Sans ships a variable optical-size axis. Flag if a true Nunito Sans Display load
  * is needed.)
  *
  * Weight mapping (mirrors Figma variables — font/weight/*):

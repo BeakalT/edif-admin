@@ -1,5 +1,4 @@
 'use client'
-import './dash.css'
 import React, { useEffect, useState } from 'react'
 import { useCountUp } from '@/hooks/use-count-up'
 import { ThemeSync } from './DashMore'

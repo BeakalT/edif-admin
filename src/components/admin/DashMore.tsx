@@ -1,5 +1,4 @@
 'use client'
-import './dash.css'
 import React, { useEffect } from 'react'
 import { cx } from '@/utils/cx'
 
