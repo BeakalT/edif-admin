@@ -1,4 +1,5 @@
 'use client'
+import { useSyncExternalStore } from 'react'
 import { Link } from '../router'
 import { useCms } from '../cms-context'
 import { covered, docKinds, exclusions, img, mainExclusions, payoutSteps, type Doc, type Faq } from '../data/content'
