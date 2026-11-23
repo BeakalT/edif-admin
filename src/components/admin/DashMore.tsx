@@ -111,7 +111,7 @@ export function DashCalendar({ events, todayKey }: { events: CalEvent[]; todayKe
     if (step) { e.preventDefault(); pick(addDays(sel, step)) }
   }
   const chosen = byDay.get(sel) || []
-  const nav = 'flex size-9 items-center justify-center rounded-full border border-[var(--sheet-line)] text-[var(--navy-t)] outline-none hover:bg-[var(--chip)] focus-visible:ring-2 focus-visible:ring-[#2875BA]'
+  const nav = 'flex size-9 cursor-pointer items-center bg-transparent p-0 shadow-none justify-center rounded-full border border-[var(--sheet-line)] text-[var(--navy-t)] outline-none hover:bg-[var(--chip)] focus-visible:ring-2 focus-visible:ring-[#2875BA]'
   return (
     <section className={SHEET} aria-label="Calendar">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -120,7 +120,7 @@ export function DashCalendar({ events, todayKey }: { events: CalEvent[]; todayKe
           <button type="button" className={nav} onClick={() => go(-1)} aria-label="Previous month">‹</button>
           <span className="min-w-36 text-center text-[15px] font-bold text-[var(--ink)]" aria-live="polite">{MONTHS[view.m]} {view.y}</span>
           <button type="button" className={nav} onClick={() => go(1)} aria-label="Next month">›</button>
-          <button type="button" onClick={() => { setView({ y: t.y, m: t.m }); setSel(todayKey) }} className="ms-1 rounded-full border border-[var(--sheet-line)] px-3.5 py-1.5 text-[13px] font-semibold text-[var(--navy-t)] outline-none hover:bg-[var(--chip)] focus-visible:ring-2 focus-visible:ring-[#2875BA]">Today</button>
+          <button type="button" onClick={() => { setView({ y: t.y, m: t.m }); setSel(todayKey) }} className="ms-1 cursor-pointer rounded-full border border-[var(--sheet-line)] bg-transparent px-3.5 py-1.5 text-[13px] font-semibold text-[var(--navy-t)] outline-none hover:bg-[var(--chip)] focus-visible:ring-2 focus-visible:ring-[#2875BA]">Today</button>
         </div>
       </div>
       <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
@@ -134,8 +134,8 @@ export function DashCalendar({ events, todayKey }: { events: CalEvent[]; todayKe
               return (
                 <button key={k} type="button" data-k={k} tabIndex={isSel ? 0 : -1} onClick={() => setSel(k)} aria-pressed={isSel}
                   aria-label={`${pretty(k)}${isToday ? ', today' : ''}, ${ev.length ? `${ev.length} ${ev.length === 1 ? 'item' : 'items'}` : 'nothing scheduled'}`}
-                  className={cx('relative flex aspect-square min-h-11 flex-col items-center justify-center gap-1 rounded-xl text-[14px] font-semibold tabular-nums outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#2875BA]',
-                    isSel ? 'bg-[#1E3570] text-white' : mine ? 'text-[var(--ink)] hover:bg-[var(--chip)]' : 'text-[var(--ink-3)]/60 hover:bg-[var(--chip)]',
+                  className={cx('relative m-0 flex h-12 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-0 bg-transparent p-0 text-[14px] shadow-none font-semibold tabular-nums outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#2875BA]',
+                    isSel ? 'bg-[#1E3570] text-white' : mine ? 'text-[var(--ink)] hover:bg-[var(--chip)]' : 'text-[var(--ink-3)] opacity-50 hover:bg-[var(--chip)]',
                     isToday && !isSel && 'ring-2 ring-[#C29B38]')}>
                   <span>{parse(k).d}</span>
                   <span className="flex h-1.5 gap-0.5" aria-hidden>{kinds.map((kd) => <i key={kd} className="size-1.5 rounded-full" style={{ background: isSel ? '#E6D7A6' : KIND[kd].dot }} />)}</span>
