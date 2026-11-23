@@ -8,7 +8,10 @@ import { passedTwoFactor } from '../../lib/twoFactor'
 import { summarize } from '../../lib/auditSummary'
 import { daysLeft, type DayStat } from './dashFormat'
 import { I } from './dashIcons'
-import { VisitsPanel, ActivityFeed } from './DashboardIslands'
+import { DashStats, DashVisits, type DashStat } from './DashBui'
+import { QuickActions, ClosingSoon, HealthRings, Pipeline, Activity, CommandPalette, type Quick, type Cmd } from './DashBlocks'
+import { ago } from './dashFormat'
+import { Resume, Inbox, WeekStrip, PulseNotes, type ResumeItem, type InboxItem, type WeekDay } from './DashMore'
 
 const REVIEW = ['pages', 'news', 'publications', 'faqs', 'members', 'key-figures', 'tenders', 'vacancies', 'events', 'notices']
 const day = (n: number) => new Date(Date.now() + n * 864e5)
@@ -47,13 +50,14 @@ export default async function Dashboard(props: any) {
   const CONTENT: [string, string][] = [['pages', 'Pages'], ['news', 'News'], ['publications', 'Publications'], ['tenders', 'Tenders'], ['vacancies', 'Vacancies'], ['events', 'Events'], ['faqs', 'FAQs']]
   const content = canEdit ? (await Promise.all(CONTENT.map(async ([slug, label]) => {
     try {
-      const [pub, dr] = await Promise.all([
+      const [pub, dr, wk] = await Promise.all([
         payload.count({ collection: slug, where: { _status: { equals: 'published' } }, overrideAccess: true }),
         payload.count({ collection: slug, where: { _status: { equals: 'draft' } }, overrideAccess: true }),
+        payload.count({ collection: slug, where: { and: [{ _status: { equals: 'published' } }, { updatedAt: { greater_than: day(-7).toISOString() } }] }, overrideAccess: true }),
       ])
-      return { slug, label, pub: pub.totalDocs as number, dr: dr.totalDocs as number }
+      return { slug, label, pub: pub.totalDocs as number, dr: dr.totalDocs as number, wk: wk.totalDocs as number }
     } catch { return null }
-  }))).filter((x): x is { slug: string; label: string; pub: number; dr: number } => !!x && x.pub + x.dr > 0) : []
+  }))).filter((x): x is { slug: string; label: string; pub: number; dr: number; wk: number } => !!x && x.pub + x.dr > 0) : []
   const perDay = new Map<string, Record<string, number>>()
   for (const v of (views as any).docs) { const k = String(v.day).slice(0, 10); const m = perDay.get(k) || {}; m[v.path] = (m[v.path] || 0) + v.views; perDay.set(k, m) }
   const days60: DayStat[] = Array.from({ length: 60 }, (_, k) => {
@@ -93,6 +97,7 @@ export default async function Dashboard(props: any) {
   const attention = (featured ? 1 : 0) + rows.length
   const lead = attention ? `${attention} ${attention === 1 ? 'thing needs' : 'things need'} your attention today.` : canEdit ? 'Nothing is waiting for you. A good day to improve a page.' : 'Nothing is waiting for you.'
   const extra: string[] = []
+  if (featured) extra.push(`Your ${featured.kind.toLowerCase()} “${featured.title}” closes ${daysLeft(featured.at)}.`)
   if (['admin', 'publisher', 'auditor'].includes(role) && total > 0) extra.push(`Your site had ${total} ${total === 1 ? 'visit' : 'visits'} this week${delta !== null && delta !== 0 ? `, ${delta > 0 ? 'up' : 'down'} ${Math.abs(delta)}% on last week` : ''}.`)
   if (seo.length) extra.push(`${seo.length} ${seo.length === 1 ? 'page needs' : 'pages need'} a search fix.`)
   const summary = [lead, ...extra].join(' ')
@@ -101,32 +106,90 @@ export default async function Dashboard(props: any) {
   const published = content.reduce((n, c) => n + c.pub, 0)
   const drafts = content.reduce((n, c) => n + c.dr, 0)
 
+  const [draftDocs, inboxDocs] = await Promise.all([
+    canEdit ? Promise.all(CONTENT.map(([slug, label]) => payload.find({ collection: slug, draft: true, where: { _status: { equals: 'draft' } }, sort: '-updatedAt', ...sys, limit: 3 }).then((r: any) => r.docs.map((d: any) => ({ slug, label, id: d.id, title: String(d.title || d.label || d.question || d.name || `Untitled ${label.toLowerCase()}`), at: d.updatedAt as string }))).catch(() => []))) : Promise.resolve([]),
+    staffOnly ? payload.find({ collection: 'messages', where: { status: { equals: 'new' } }, sort: '-createdAt', ...sys, limit: 3 }).then((r: any) => r.docs).catch(() => []) : Promise.resolve([]),
+  ])
+  const resume: ResumeItem[] = (draftDocs as any[]).flat().sort((a, b) => +new Date(b.at) - +new Date(a.at)).slice(0, 3).map((d) => ({ title: d.title, kind: d.label.replace(/s$/, ''), href: adminUrl(`/collections/${d.slug}/${d.id}`), ago: ago(d.at) }))
+  const inbox: InboxItem[] = (inboxDocs as any[]).map((m) => ({ name: String(m.name || 'Someone'), subject: String(m.subject || m.topic || ''), excerpt: String(m.message || '').replace(/\s+/g, ' ').slice(0, 90), ago: ago(m.createdAt), href: adminUrl(`/collections/messages/${m.id}`) }))
+  const ethDate = (() => { try { return new Date().toLocaleDateString('am-ET-u-ca-ethiopic', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Addis_Ababa' }) } catch { return '' } })()
+  const weekDays: WeekDay[] = Array.from({ length: 7 }, (_, k) => {
+    const d = day(k); const key = d.toLocaleDateString('en-CA', { timeZone: 'Africa/Addis_Ababa' })
+    const events: WeekDay['events'] = [
+      ...closing.filter((c) => new Date(c.at).toLocaleDateString('en-CA', { timeZone: 'Africa/Addis_Ababa' }) === key).map((c) => ({ text: `${c.kind} closes`, kind: 'close' as const })),
+      ...(jobs.docs as any[]).filter((j) => j.waitUntil && new Date(j.waitUntil).toLocaleDateString('en-CA', { timeZone: 'Africa/Addis_Ababa' }) === key).map(() => ({ text: 'Scheduled', kind: 'publish' as const })),
+    ]
+    return { label: d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'Africa/Addis_Ababa' }), num: d.toLocaleDateString('en-GB', { day: 'numeric', timeZone: 'Africa/Addis_Ababa' }), today: k === 0, events }
+  })
+  const tally = (prefix: string) => { const m: Record<string, number> = {}; for (const d of days60.slice(-7)) for (const [p, n] of Object.entries(d.paths)) if (p.startsWith(prefix)) m[p] = (m[p] || 0) + n; const top = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; return top ? decodeURIComponent(top[0].replace(prefix, '').split('/')[0]).replace(/-/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) : undefined }
+  const pulse = {
+    wins: content.reduce((n, c) => n + c.wk, 0),
+    topNews: hasHealth ? tally('/news/') : undefined,
+    topPub: hasHealth ? tally('/publications/') : undefined,
+    backup: role === 'admin' ? { text: backup.startsWith('No backup') ? 'No backup recorded yet. Worth checking.' : `Last backup: ${backup.replace(/^edif-[^ ]+ /, '').replace(/[()]/g, '')}.${/ days/.test(backup) ? ' That is a while, worth checking.' : ' All good.'}`, ok: !backup.startsWith('No backup') && !/ days/.test(backup) } : undefined,
+  }
+  const dayMon = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Africa/Addis_Ababa' })
+  const quick: Quick[] = [
+    ...(canEdit ? [
+      { href: adminUrl('/collections/pages/create'), title: 'New page', desc: 'Start a page from scratch', icon: 'page' },
+      { href: adminUrl('/collections/news/create'), title: 'News article', desc: 'Share an update with the public', icon: 'news' },
+      { href: adminUrl('/collections/media/create'), title: 'Upload a file', desc: 'Images, reports and documents', icon: 'media' },
+    ] as Quick[] : []),
+    { href: '/', title: 'View the website', desc: 'See what the public sees', icon: 'web', external: true },
+  ]
+  const closingItems = closing.slice(0, 5).map((c) => ({ kind: c.kind, title: c.title, href: c.href, when: dayMon(c.at), days: Math.max(0, Math.ceil((new Date(c.at).getTime() - nowMs()) / 864e5)) }))
+  const pagesRow = content.find((c) => c.slug === 'pages')
+  const health = {
+    seo: ['admin', 'publisher', 'seo'].includes(role) && pagesRow ? { total: pagesRow.pub + pagesRow.dr, missing: seo.length, href: seo[0]?.link || adminUrl('/collections/pages') } : undefined,
+    security: role === 'admin' && (noTotp as any).all ? { total: (noTotp as any).all as number, without: (noTotp as any).totalDocs as number, href: adminUrl('/collections/users') } : undefined,
+  }
+  const pipe = { draft: drafts, review: inReview.length, changes: changes.length, published, hrefs: { review: inReview[0] ? adminUrl(`/collections/${inReview[0].slug}/${inReview[0].id}`) : undefined } }
+  const acts = activity.map((a) => ({ id: a.id, text: a.text, ago: ago(a.at), count: a.count, kind: (a.action === 'security' ? 'security' : /create|update|publish|unpublish|submit|delete/.test(a.action) ? 'edit' : 'other') as 'security' | 'edit' | 'other' }))
+  const cmds: Cmd[] = [
+    ...(canEdit ? [{ label: 'New page', href: adminUrl('/collections/pages/create'), group: 'Create' }, { label: 'New news article', href: adminUrl('/collections/news/create'), group: 'Create' }, { label: 'Upload a file', href: adminUrl('/collections/media/create'), group: 'Create' }] : []),
+    ...CONTENT.map(([slug, label]) => ({ label, href: adminUrl(`/collections/${slug}`), group: 'Content' })),
+    ...(staffOnly ? [{ label: 'Messages', href: adminUrl('/collections/messages'), group: 'Inbox' }] : []),
+    ...(role === 'admin' ? [{ label: 'Team and users', href: adminUrl('/collections/users'), group: 'Settings' }] : []),
+    ...(['admin', 'auditor'].includes(role) ? [{ label: 'Audit log', href: adminUrl('/collections/audit-log'), group: 'Security' }] : []),
+    { label: 'View the website', href: '/', group: 'Site' },
+  ]
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+  const dashStats: DashStat[] = [
+    ...(canEdit ? [
+      { label: 'Published', value: String(published), note: 'pieces of content are live on the website.' },
+      { label: 'Drafts', value: String(drafts), note: drafts ? `${plural(drafts, 'item is', 'items are')} still being written.` : 'Nothing half-finished right now.' },
+    ] : []),
+    { label: 'In review', value: String(inReview.length), note: inReview.length ? `${plural(inReview.length, 'item is', 'items are')} waiting for a reviewer.` : 'Nothing is waiting for a reviewer.', href: inReview[0] ? adminUrl(`/collections/${inReview[0].slug}/${inReview[0].id}`) : undefined },
+    ...(hasHealth ? [{ label: 'Visits this week', value: String(total), note: delta === null ? 'Not enough history yet to compare.' : delta === 0 ? 'About the same as last week.' : `${delta > 0 ? 'Up' : 'Down'} ${Math.abs(delta)}% on last week.` }] : []),
+  ]
+
   return (
     <div className="edif-board">
       <section className="edif-dash__hero">
         <div className="edif-dash__lead">
-          <div className="edif-dash__date">{today}</div>
+          <div className="edif-dash__date">{today}{ethDate ? <> · {ethDate}</> : null}</div>
           <h2>{hello}{user?.name ? `, ${user.name}` : ''}</h2>
+          <p className="edif-dash__am" lang="am">እንኳን ደህና መጡ</p>
           <p>{summary}</p>
           <div className="edif-dash__actions">
-            {canEdit && <a className="primary" href={adminUrl('/collections/pages/create')}>+ New page</a>}
-            {canEdit && <a href={adminUrl('/collections/news/create')}>+ News article</a>}
-            {canEdit && <a href={adminUrl('/collections/media/create')}>Upload a file</a>}
-            {canEdit && <a href={adminUrl('/collections/pages')}>Edit a page</a>}
             {role === 'seo' && <a className="primary" href={adminUrl('/collections/seo-pages')}>Page search settings</a>}
             {role === 'seo' && <a href={adminUrl('/collections/redirects')}>Redirects</a>}
             {role === 'auditor' && <a className="primary" href={adminUrl('/collections/audit-log')}>Audit log</a>}
             {role === 'auditor' && <a href={adminUrl('/collections/page-views')}>Visit statistics</a>}
-            <a href="/" target="_blank" rel="noreferrer">View the website ↗</a>
           </div>
         </div>
-        <dl className="edif-dash__stats">
-          {canEdit && <div><dt>Published</dt><dd>{published}</dd></div>}
-          {canEdit && <div><dt>Drafts</dt><dd>{drafts}</dd></div>}
-          <div><dt>In review</dt><dd>{inReview.length}</dd></div>
-          {hasHealth && <div><dt>Visits today</dt><dd>{series[series.length - 1].n}</dd></div>}
-        </dl>
       </section>
+
+      <CommandPalette commands={cmds} />
+      <QuickActions items={quick} />
+      <DashStats stats={dashStats} />
+      <PulseNotes p={pulse} />
+      {(canEdit || staffOnly) && (
+        <div className="edif-board__split edif-board__split--even">
+          {canEdit && <Resume items={resume} />}
+          {staffOnly && <Inbox items={inbox} total={(msgs as any).totalDocs} href={adminUrl('/collections/messages')} />}
+        </div>
+      )}
 
       <section className="edif-board__sheet">
         <h3>To do</h3>
@@ -149,6 +212,15 @@ export default async function Dashboard(props: any) {
       </section>
 
       <div className="edif-board__split">
+        <ClosingSoon items={closingItems} />
+        <HealthRings {...health} />
+      </div>
+
+      <WeekStrip days={weekDays} />
+
+      <Pipeline p={pipe} />
+
+      <div className="edif-board__split">
         {!!content.length && (
           <section className="edif-board__sheet">
             <h3>Content</h3>
@@ -167,10 +239,10 @@ export default async function Dashboard(props: any) {
             <p className="edif-board__key"><i className="pub" />Published<i className="dr" />Draft</p>
           </section>
         )}
-        {hasHealth && <VisitsPanel days={days60} />}
+        {hasHealth && <DashVisits days={days60} />}
       </div>
 
-      {!!activity.length && <ActivityFeed items={activity} href={adminUrl('/collections/audit-log')} />}
+      {!!acts.length && <Activity items={acts} href={adminUrl('/collections/audit-log')} />}
     </div>
   )
 }

@@ -137,13 +137,21 @@ export function Steps({ more = true }: { more?: boolean }) {
   )
 }
 
-export function FaqList({ items, openFirst = true }: { items: Faq[]; openFirst?: boolean }) {
+/** Wraps matches of the search words in a gold <mark>. Built from text nodes, so nothing is ever injected as HTML. */
+function Mark({ text, words }: { text: string; words: string[] }) {
+  if (!words.length) return <>{text}</>
+  const re = new RegExp('(' + words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'ig')
+  return <>{text.split(re).map((part, i) => (i % 2 ? <mark key={i}>{part}</mark> : part))}</>
+}
+
+export function FaqList({ items, openFirst = true, highlight = '' }: { items: Faq[]; openFirst?: boolean; highlight?: string }) {
+  const words = highlight.trim().split(/\s+/).filter((w) => w.length > 1)
   return (
     <div className="faq">
       {items.map((f, i) => (
         <details key={f.q} open={openFirst && i === 0 ? true : undefined}>
-          <summary>{f.q}<i /></summary>
-          <p>{f.a}</p>
+          <summary><span><Mark text={f.q} words={words} /></span><i /></summary>
+          <p><Mark text={f.a} words={words} /></p>
         </details>
       ))}
     </div>

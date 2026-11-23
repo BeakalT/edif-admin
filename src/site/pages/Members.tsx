@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from '../router'
 import { Arrow, Globe, Mail, PageHero, Phone, Pin, Search } from '../components/ui'
+import LiquidTabs from '../components/LiquidTabs'
 import { useCms } from '../cms-context'
 import type { Member } from '../data/members'
 
@@ -30,11 +31,7 @@ export function MemberDirectory({ source = '' }: { source?: string }) {
         <span className="sr">Search members</span>
         <input type="search" placeholder="Search by name or town" value={q} onChange={(e) => setQ(e.target.value)} />
       </label>
-      <div className="tabs" role="tablist" aria-label="Filter by type">
-        {tabs.map(([k, l, n]) => (
-          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l} <span className="num">{n}</span></button>
-        ))}
-      </div>
+      <LiquidTabs tabs={tabs} value={tab} onChange={setTab} label="Filter by type" />
     </div>
     <p className="dir-count" aria-live="polite">
       {list.length ? <>Showing <b>{list.length}</b> {list.length === 1 ? 'member' : 'members'}{q && <> matching “{q}”</>}</> : null}
@@ -88,11 +85,7 @@ export default function Members() {
               <span className="sr">Search members</span>
               <input type="search" placeholder="Search by name or town" value={q} onChange={(e) => setQ(e.target.value)} />
             </label>
-            <div className="tabs" role="tablist" aria-label="Filter by type">
-              {tabs.map(([k, l, n]) => (
-                <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l} <span className="num">{n}</span></button>
-              ))}
-            </div>
+            <LiquidTabs tabs={tabs} value={tab} onChange={setTab} label="Filter by type" />
           </div>
           <p className="dir-count" aria-live="polite">
             {list.length ? <>Showing <b>{list.length}</b> {list.length === 1 ? 'member' : 'members'}{q && <> matching “{q}”</>}</> : null}

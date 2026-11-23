@@ -182,7 +182,7 @@ export function FaqPage() {
               ))}
             </div>
           </div>
-          {list.length ? <FaqList key={c + q} items={list} openFirst={!!q} /> : (
+          {list.length ? <FaqList key={c + q} items={list} openFirst={!!q} highlight={q} /> : (
             <div className="empty"><h3>No questions match “{q}”</h3><p>Try a different word, or ask us directly.</p></div>
           )}
           <div className="ask">

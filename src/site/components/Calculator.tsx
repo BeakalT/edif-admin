@@ -1,16 +1,18 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { useCms } from '../cms-context'
 import { LIMIT } from '../data/content'
 import { Tween } from './motion'
 
 const fmt = (n: number) => Math.round(n).toLocaleString('en-US')
 type Row = { i: string; b: number }
-const EXAMPLE: Row[] = [
-  { i: 'Commercial Bank of Ethiopia', b: 65000 },
-  { i: 'Commercial Bank of Ethiopia', b: 50000 },
-  { i: 'Awash Bank', b: 30000 },
-]
+/** Example accounts use real members: Commercial Bank of Ethiopia and Awash Bank when listed, otherwise the first two names. */
+function exampleRows(names: string[]): Row[] {
+  const a = names.find((n) => /commercial bank of ethiopia/i.test(n)) ?? names[0] ?? 'Commercial Bank of Ethiopia'
+  const b = names.find((n) => /awash/i.test(n)) ?? names.find((n) => n !== a) ?? a
+  return [{ i: a, b: 65000 }, { i: a, b: 50000 }, { i: b, b: 30000 }]
+}
 
 export default function Calculator() {
   const { banks, microfinance } = useCms()
@@ -43,6 +45,19 @@ export default function Calculator() {
     const scale = Math.max(LIMIT * 1.25, g.t)
     return { k, g, p, o, pw: (p / scale) * 100, ow: (o / scale) * 100, lim: (LIMIT / scale) * 100 }
   })
+  const total = prot + over
+  const settled = total > 0 && pending === 0
+  useEffect(() => {
+    if (!settled) return
+    const t = setTimeout(() => toast.success(`Birr ${fmt(prot)} protected` + (over ? `, Birr ${fmt(over)} not protected` : ', nothing above the limit'), { id: 'calc-result', duration: 5000 }), 1400)
+    return () => clearTimeout(t)
+  }, [settled, prot, over])
+  const copyResult = async () => {
+    const lines = list.map(({ k, g, p, o }) => `${k}: Birr ${fmt(g.t)} (protected Birr ${fmt(p)}${o ? `, not protected Birr ${fmt(o)}` : ''})`)
+    const text = `EDIF coverage estimate\n${lines.join('\n')}\nProtected: Birr ${fmt(prot)}. Not protected: Birr ${fmt(over)}.\nAn estimate only: the Fund confirms each depositor's amount at payout.`
+    try { await navigator.clipboard.writeText(text); toast.success('Result copied', { id: 'calc-copy', duration: 3000 }) }
+    catch { toast.error('Could not copy. You can select the figures and copy them instead.', { id: 'calc-copy' }) }
+  }
   const dirty = rows.length > 1 || rows.some((r) => r.i || r.b)
 
   return (
@@ -51,7 +66,7 @@ export default function Calculator() {
         <div className="calc-top">
           <span className="legend" id="acc-legend">Your accounts</span>
           <button type="button" className="ex-btn" onClick={() => {
-            setRows(EXAMPLE.map((r) => ({ ...r }))); setExample(true)
+            setRows(exampleRows(BANKS.length ? BANKS : MFIS)); setExample(true)
             calcRef.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' })
           }}>Show an example</button>
         </div>
@@ -89,20 +104,34 @@ export default function Calculator() {
       </form>
       <div className="calc-out" aria-live="polite">
         <div className="out-head"><span className="label">Your result</span>{example && <span className="ex-tag">Example figures</span>}</div>
-        <div className="totals">
-          <div className="t-main">
-            <span className="t-k">Protected</span>
-            <b className="num">Birr <Tween value={prot} /></b>
-            <small>{groups.size ? (groups.size > 1 ? `Across ${groups.size} institutions` : 'At 1 institution') : 'Up to Birr 100,000 at each institution'}</small>
+        {groups.size > 0 ? (
+          <>
+            <div className="totals">
+              <div className="t-main">
+                <span className="t-k">Protected</span>
+                <b className="num">Birr <Tween value={prot} /></b>
+                <small>{groups.size > 1 ? `Across ${groups.size} institutions` : 'At 1 institution'}</small>
+              </div>
+              <div className={'t-side' + (over ? ' warn' : '')}>
+                <span className="t-k">Not protected</span>
+                <b className="num">Birr <Tween value={over} /></b>
+                <small>{over ? 'Above the limit' : 'Nothing above the limit'}</small>
+              </div>
+            </div>
+            <div className="split" aria-hidden="true">
+              <i className="split-ok" style={{ width: (total ? (prot / total) * 100 : 0) + '%' }} />
+              <i className="split-over" style={{ width: (total ? (over / total) * 100 : 0) + '%' }} />
+            </div>
+          </>
+        ) : (
+          <div className="calc-empty">
+            <p className="empty-lead">Each depositor is protected up to <strong>Birr {fmt(LIMIT)}</strong> at each member institution.</p>
+            <div className="split is-empty" aria-hidden="true"><i className="split-lim" /></div>
+            <p className="empty-key"><span>Birr 0</span><span>Birr {fmt(LIMIT)} limit</span></p>
           </div>
-          <div className={'t-side' + (over ? ' warn' : '')}>
-            <span className="t-k">Not protected</span>
-            <b className="num">Birr <Tween value={over} /></b>
-            <small>{over ? 'Above the limit' : 'Nothing above the limit'}</small>
-          </div>
-        </div>
+        )}
         {!groups.size && <p className="res-hint">{pending ? 'Choose the institution for each account to see your result.' : 'Enter a balance to see how much is protected.'}</p>}
-        {example && <p className="ex-explain">Two accounts at the same bank are added together (Birr 115,000), so Birr 15,000 is above the limit. The account at the second bank is protected separately.</p>}
+        {example && list.length > 1 && <p className="ex-explain">Two accounts at the same bank are added together (Birr {fmt(list[0].g.t)}), so Birr {fmt(list[0].o)} is above the limit. The account at the second bank is protected separately.</p>}
         {groups.size > 0 && (
           <ul className="groups">
             {list.map(({ k, g, p, o, pw, ow, lim }, i) => (
@@ -120,6 +149,7 @@ export default function Calculator() {
           </ul>
         )}
         {pending > 0 && groups.size > 0 && <p className="pending">{pending === 1 ? '1 account needs' : pending + ' accounts need'} an institution before it can be counted.</p>}
+        {groups.size > 0 && <button type="button" className="calc-copybtn" onClick={copyResult}>Copy result</button>}
         <p className="calc-note">An estimate only. At payout, the Fund nets off any matured loans and deposits held as collateral, and confirms each depositor’s amount.</p>
       </div>
     </div>

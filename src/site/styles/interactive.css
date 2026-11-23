@@ -1,0 +1,66 @@
+/* Interactive layer: calm navy and gold. Motion is switched off for reduced-motion users at the end of this file. */
+
+/* ===== coverage calculator ===== */
+.calc-out .meter .ok{background:linear-gradient(90deg,var(--gold),#E3C877)}
+.calc-out .meter .over{background:repeating-linear-gradient(-45deg,rgba(255,255,255,.85) 0 4px,rgba(255,255,255,.3) 4px 8px)}
+
+.split{position:relative;display:flex;height:10px;margin-top:20px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
+.split i{display:block;height:100%;transition:width .8s var(--ease)}
+.split-ok{background:linear-gradient(90deg,var(--gold),#E3C877)}
+.split-over{background:repeating-linear-gradient(-45deg,rgba(255,255,255,.85) 0 4px,rgba(255,255,255,.3) 4px 8px)}
+.split.is-empty{height:8px;margin-top:22px}
+.split-lim{position:absolute;right:0;top:0;bottom:0;width:2px;background:var(--gold-pale)}
+.motion .calc-out .split:not(.is-empty){animation:meterIn 1s var(--ease) both}
+
+.calc-empty{margin-top:18px}
+.empty-lead{font-family:var(--display);font-weight:700;font-size:clamp(1.15rem,1rem + .6vw,1.4rem);line-height:1.35;color:#fff;max-width:30ch}
+.empty-lead strong{color:var(--gold-pale)}
+.empty-key{display:flex;justify-content:space-between;gap:12px;margin-top:10px;font-size:.84rem;color:rgba(255,255,255,.72)}
+
+/* ===== liquid filter tabs (member directory) ===== */
+.tabs.liquid button{position:relative}
+.tabs.liquid button.on{background:none}
+.liquid-pill{position:absolute;inset:0;border-radius:999px;background:var(--navy)}
+.liquid-lbl{position:relative;z-index:1}
+
+/* ===== deposit-type carousel (phones) ===== */
+.dt-view{overflow:hidden;border-radius:var(--r);padding:2px}
+.dt-track{display:flex;gap:12px;list-style:none;margin:0;padding:0;cursor:grab;touch-action:pan-y}
+.dt-track:active{cursor:grabbing}
+.dt-card{flex:0 0 82%;min-width:0;padding:24px 22px;background:#fff;border:1px solid var(--line-2);border-radius:var(--r);user-select:none}
+.dt-card svg{width:28px;height:28px;color:var(--blue)}
+.dt-card .rule{display:block;width:28px;height:2px;margin:16px 0 12px;background:var(--gold)}
+.dt-card h3{font-size:1.15rem;font-weight:700}
+.dt-card p{margin-top:6px;font-size:.95rem;color:var(--muted)}
+.dt-bar{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:16px}
+.dt-btn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid var(--line-2);background:#fff;color:var(--navy);cursor:pointer;transition:background-color .2s var(--ease),color .2s var(--ease)}
+.dt-btn:hover:not(:disabled){background:var(--navy);color:#fff}
+.dt-btn:disabled{opacity:.4;cursor:default}
+.dt-status{min-width:5ch;text-align:center;font-family:var(--display);font-weight:700;font-size:.92rem;color:var(--head)}
+
+/* ===== toasts ===== */
+.st{font-family:var(--body,inherit)!important;background:#fff!important;color:var(--head)!important;border:1px solid var(--line-2)!important;border-left:3px solid var(--gold)!important;border-radius:12px!important;box-shadow:0 22px 44px -22px rgba(15,29,68,.5)!important;padding:14px 16px!important}
+.st.st-ok{border-left-color:#1B7F4B!important}
+.st-title{font-family:var(--display);font-weight:700;font-size:.96rem;color:var(--head)}
+.st-desc{margin-top:2px;font-size:.88rem;line-height:1.5;color:var(--text)!important}
+.st-close{background:#fff!important;border-color:var(--line-2)!important;color:var(--navy)!important}
+
+.calc-copybtn{margin-top:16px;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid rgba(255,255,255,.4);background:none;color:#fff;font-family:var(--display);font-weight:700;font-size:.9rem;cursor:pointer;transition:background-color .2s var(--ease)}
+.calc-copybtn:hover{background:rgba(255,255,255,.12)}
+
+/* ===== payout line drawn by scrolling (browsers with scroll-driven animation; others keep the timed draw) ===== */
+@supports (animation-timeline:view()){
+  @media (min-width:981px){
+    .motion .po.cv .po-track span,.motion .po.cv-in .po-track span{transform:none;transition:none;animation:poDraw linear both;animation-timeline:view();animation-range:entry 25% cover 55%}
+  }
+}
+@keyframes poDraw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+/* ===== FAQ search matches ===== */
+.faq mark{background:rgba(194,155,56,.32);color:inherit;padding:0 .12em;border-radius:3px}
+
+@media (prefers-reduced-motion:reduce){
+  .split i{transition:none}
+  [data-sonner-toast],[data-sonner-toast] *{transition:none!important;animation:none!important}
+  .dt-btn{transition:none}
+}

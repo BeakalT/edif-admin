@@ -1,6 +1,7 @@
 'use client'
 import { Link } from '../router'
 import Calculator from '../components/Calculator'
+import DepositTypes from '../components/DepositTypes'
 import { Compare, FaqList, Rules, Steps } from '../components/sections'
 import { Arrow, Bank, Calc, Check, Clock, Curves, NextLinks, PageHero, SecHead, Shield, SubNav, TLink, protectionNav } from '../components/ui'
 import { useCms } from '../cms-context'
@@ -100,16 +101,7 @@ export function Coverage() {
       <section className="section">
         <div className="container">
           <SecHead eyebrow="Covered" title="Eight kinds of account," em="all protected" lead="Each is protected at every member bank and microfinance institution, up to the Birr 100,000 limit per depositor." />
-          <div className="types">
-            {coveredDetail.map((c) => (
-              <div className="type" key={c.t}>
-                <Check />
-                <span className="rule" />
-                <h3>{c.t}</h3>
-                <p>{c.d}</p>
-              </div>
-            ))}
-          </div>
+          <DepositTypes items={coveredDetail.map((c) => ({ title: c.t, text: c.d }))} />
         </div>
       </section>
 
@@ -190,6 +182,10 @@ export function CalculatorPage() {
               <li><b>2</b><span><strong>Enter the balance</strong> in Birr, including interest. Convert foreign currency to Birr first.</span></li>
               <li><b>3</b><span><strong>Add every account</strong>, including several at the same institution.</span></li>
             </ol>
+            <div className="calc-eg">
+              <span>Worked example</span>
+              <p>Birr 130,000 across two accounts at one bank: <strong>Birr 100,000 is protected</strong> and Birr 30,000 is above the limit. The same money split between two banks is <strong>fully protected</strong>.</p>
+            </div>
             <p className="source">Nothing you enter leaves your device.</p>
           </div>
           <Calculator />

@@ -1043,3 +1043,13 @@ html[data-theme='dark'] .edif-board__mark { background: #34508f; }
 .edif-board .edif-tl__i::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--edif-navy); }
 html[data-theme='dark'] .edif-board .edif-tl__i::before { background: var(--edif-gold); }
 @media (prefers-reduced-motion: reduce) { .edif-board__card { transition: none; } .edif-board__card:hover { transform: none; } }
+
+/* Dashboard: stat cards moved out of the hero into BoardUI cards below it */
+.edif-dash__hero { grid-template-columns: minmax(0, 1fr); }
+.edif-board > .edif-bui { margin-top: 20px; }
+.edif-board > .edif-bui { margin-top: 20px; }
+.edif-board > .edif-board__split > .edif-bui { margin: 0; }
+.edif-dash__am { margin: 2px 0 8px !important; font-size: 1rem; color: var(--edif-gold-soft); opacity: 1 !important; font-weight: 600; }
+.edif-board__split--even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.edif-board__split--even:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 900px) { .edif-board__split--even { grid-template-columns: minmax(0, 1fr); } }
