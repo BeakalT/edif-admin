@@ -2,7 +2,8 @@
 import { Link } from '../router'
 import Calculator from '../components/Calculator'
 import DepositTypes from '../components/DepositTypes'
-import { Compare, FaqList, Rules, Steps } from '../components/sections'
+import { Compare, FaqList, Rules } from '../components/sections'
+import { PayoutTimeline } from '../components/PayoutTimeline'
 import { Arrow, Bank, Calc, Check, Clock, Curves, NextLinks, PageHero, SecHead, Shield, SubNav, TLink, protectionNav } from '../components/ui'
 import { useCms } from '../cms-context'
 import { coveredDetail, exclusions, type Faq } from '../data/content'
@@ -241,7 +242,7 @@ export function Payout() {
       <section className="section bg-ice">
         <div className="container">
           <SecHead eyebrow="At a glance" title="Four stages," em="ninety days" />
-          <Steps more={false} />
+          <PayoutTimeline />
         </div>
       </section>
 
