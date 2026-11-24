@@ -115,7 +115,7 @@ export function Pipeline({ p }: { p: Pipe }) {
   )
 }
 
-export type Act = { id: string | number; text: string; ago: string; kind: 'security' | 'edit' | 'other'; count: number }
+export type Act = { id: string | number; text: string; ago: string; kind: 'security' | 'edit' | 'other'; count: number; parts?: { who: string; verb: string; what: string; detail: string } }
 export function Activity({ items, href }: { items: Act[]; href: string }) {
   const [tab, setTab] = useState<'all' | 'security' | 'edit'>('all')
   const shown = items.filter((i) => tab === 'all' || i.kind === tab).slice(0, 7)
@@ -132,7 +132,11 @@ export function Activity({ items, href }: { items: Act[]; href: string }) {
         {shown.map((a) => (
           <li key={a.id} className="flex items-baseline gap-3 border-b border-[var(--hair)] py-2.5 last:border-0">
             <span className={cx('size-1.5 shrink-0 translate-y-[-2px] rounded-full', a.kind === 'security' ? 'bg-[#C29B38]' : 'bg-[#2875BA]')} aria-hidden />
-            <p className="min-w-0 flex-1 text-[14px] text-[var(--ink)]">{a.text}{a.count > 1 ? ` (${a.count} times)` : ''}</p>
+            <div className="min-w-0 flex-1">
+              {a.parts ? <p className="text-[14px] text-[var(--ink)]"><b className="font-semibold">{a.parts.who}</b> {a.parts.verb} <span className="font-semibold">{a.parts.what}</span></p> : <p className="text-[14px] text-[var(--ink)]">{a.text}</p>}
+              {a.parts?.detail && <p className="mt-0.5 text-[13px] text-[var(--ink-2)]">{a.parts.detail}</p>}
+            </div>
+            {a.count > 1 && <span className="shrink-0 rounded-full bg-[var(--chip)] px-2 py-0.5 text-[12px] font-semibold text-[var(--navy-t)]">×{a.count}</span>}
             <span className="shrink-0 text-[13px] text-[var(--ink-3)]">{a.ago}</span>
           </li>
         ))}

@@ -5,7 +5,7 @@ import fs from 'fs'
 import path from 'path'
 import { seoHealth } from '../../lib/seoHealth'
 import { passedTwoFactor } from '../../lib/twoFactor'
-import { summarize } from '../../lib/auditSummary'
+import { summarize, describe } from '../../lib/auditSummary'
 import { daysLeft, type DayStat } from './dashFormat'
 import { I } from './dashIcons'
 import { DashStats, DashVisits, type DashStat } from './DashBui'
@@ -147,7 +147,7 @@ export default async function Dashboard(props: any) {
     security: role === 'admin' && (noTotp as any).all ? { total: (noTotp as any).all as number, without: (noTotp as any).totalDocs as number, href: adminUrl('/collections/users') } : undefined,
   }
   const pipe = { draft: drafts, review: inReview.length, changes: changes.length, published, hrefs: { review: inReview[0] ? adminUrl(`/collections/${inReview[0].slug}/${inReview[0].id}`) : undefined } }
-  const acts = activity.map((a) => ({ id: a.id, text: a.text, ago: ago(a.at), count: a.count, kind: (a.action === 'security' ? 'security' : /create|update|publish|unpublish|submit|delete/.test(a.action) ? 'edit' : 'other') as 'security' | 'edit' | 'other' }))
+  const acts = activity.map((a) => ({ id: a.id, text: a.text, parts: a.action === 'security' ? undefined : a.parts, ago: ago(a.at), count: a.count, kind: (a.action === 'security' ? 'security' : /create|update|publish|unpublish|submit|delete/.test(a.action) ? 'edit' : 'other') as 'security' | 'edit' | 'other' }))
   const cmds: Cmd[] = [
     ...(canEdit ? [{ label: 'New page', href: adminUrl('/collections/pages/create'), group: 'Create' }, { label: 'New news article', href: adminUrl('/collections/news/create'), group: 'Create' }, { label: 'Upload a file', href: adminUrl('/collections/media/create'), group: 'Create' }] : []),
     ...CONTENT.map(([slug, label]) => ({ label, href: adminUrl(`/collections/${slug}`), group: 'Content' })),
@@ -246,13 +246,13 @@ export default async function Dashboard(props: any) {
 }
 
 /** Plain sentences for the dashboard: the audit log's own summary, with identical neighbouring rows collapsed into one line. */
-function groupActivity(docs: any[]): { id: string | number; text: string; at: string; count: number; action: string }[] {
-  const out: { id: string | number; text: string; at: string; count: number; action: string }[] = []
+function groupActivity(docs: any[]): { id: string | number; text: string; at: string; count: number; action: string; parts: ReturnType<typeof describe> }[] {
+  const out: { id: string | number; text: string; at: string; count: number; action: string; parts: ReturnType<typeof describe> }[] = []
   for (const e of docs) {
     const text: string = e.summary || summarize(e)
     const last = out[out.length - 1]
     if (last && last.text === text) last.count++
-    else out.push({ id: e.id, text, at: e.createdAt, count: 1, action: String(e.action || '') })
+    else out.push({ id: e.id, text, at: e.createdAt, count: 1, action: String(e.action || ''), parts: describe(e) })
   }
   return out
 }
