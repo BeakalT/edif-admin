@@ -31,5 +31,5 @@ if [ ! -f "$HOME/edif-data/edif.db" ]; then
 fi
 npm run build
 cp -R .next/static .next/standalone/.next/ ; cp -R public .next/standalone/
-echo "Open /admin once to create the first administrator (your own email and a new password)."
+echo "Create the first administrator (you type the email and password): cd $APP && set -a && . ./.env && set +a && NODE_ENV=development npx payload run scripts/create-admin.ts"
 echo "Built. In cPanel > Setup Node.js App: root=$APP, startup file=.next/standalone/server.js, then Restart."
