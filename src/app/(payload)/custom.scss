@@ -1053,3 +1053,13 @@ html[data-theme='dark'] .edif-board .edif-tl__i::before { background: var(--edif
 .edif-board__split--even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .edif-board__split--even:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 900px) { .edif-board__split--even { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- sidebar profile block ---------- */
+.edif-navhome__me { display: flex; align-items: center; gap: 12px; margin: 2px 4px 12px; padding: 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.07); text-decoration: none; color: #fff; transition: background-color .15s; }
+.edif-navhome__me:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.edif-navhome__avatar { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #fff; color: var(--edif-navy); font-family: var(--edif-display); font-weight: 800; font-size: 1rem; box-shadow: 0 0 0 3px var(--edif-gold); }
+.edif-navhome__me span:last-child { display: grid; min-width: 0; line-height: 1.25; }
+.edif-navhome__me strong { font-weight: 700; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.edif-navhome__me small { font-size: 0.78rem; opacity: 0.75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.edif-navhome__me em { font-style: normal; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--edif-gold-soft); font-weight: 700; margin-top: 3px; }
+:root:not([data-theme='dark']) { --theme-bg: #eef2f9; }

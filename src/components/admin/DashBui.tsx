@@ -4,6 +4,7 @@ import { useCountUp } from '@/hooks/use-count-up'
 import { ThemeSync } from './DashMore'
 import { VisitsChartCard } from '@/components/application/dashboard/visits-chart-card'
 import type { DayStat } from './dashFormat'
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 function Num({ v }: { v: string }) {
   const n = Number(v)
@@ -15,17 +16,26 @@ function Num({ v }: { v: string }) {
 
 export type DashStat = { label: string; value: string; note: string; href?: string }
 
-/** At a glance: four numbers, each with a plain sentence, in one calm card. */
+/** At a glance: four separate cards. The first is filled navy with a gold marker, the rest are white with large numbers. */
 export function DashStats({ stats }: { stats: DashStat[] }) {
   return (
-    <section className="edif-bui edif-rise rounded-[18px] border border-[var(--sheet-line)] bg-[var(--sheet)] p-5 shadow-[0_10px_28px_rgba(16,32,64,.07)]" aria-label="At a glance">
+    <section className="edif-bui edif-rise grid grid-cols-2 gap-4 lg:grid-cols-4" aria-label="At a glance">
       <ThemeSync />
-      <dl className="grid grid-cols-2 gap-y-5 lg:grid-cols-4">
-        {stats.map((s, i) => {
-          const inner = (<><dt className="text-[12px] font-bold tracking-[.12em] text-[#85660F] uppercase">{s.label}</dt><dd className="mt-1.5 text-[2.1rem] leading-none font-extrabold tabular-nums text-[var(--navy-t)]"><Num v={s.value} /></dd><dd className="mt-2 text-[14px] leading-snug text-[var(--ink-2)]">{s.note}</dd></>)
-          return <div key={s.label} className={'px-5 ' + (i > 0 ? 'lg:border-s lg:border-[var(--hair)] ' : 'lg:ps-0 ') + (i % 2 === 1 ? 'border-s border-[var(--hair)] lg:border-s' : '')}>{s.href ? <a href={s.href} className="block no-underline">{inner}</a> : inner}</div>
-        })}
-      </dl>
+      {stats.map((s, i) => {
+        const hero = i === 0
+        const inner = (
+          <>
+            <span className="flex items-center justify-between gap-2">
+              <span className={'text-[12px] font-bold tracking-[.12em] uppercase ' + (hero ? 'text-[#E6D7A6]' : 'text-[#85660F]')}>{s.label}</span>
+              <i className={'size-2.5 rounded-full ' + (hero ? 'bg-[#E6D7A6]' : 'bg-[#C29B38]')} aria-hidden />
+            </span>
+            <span className={'mt-3 block text-[2.4rem] leading-none font-extrabold tabular-nums ' + (hero ? 'text-white' : 'text-[var(--navy-t)]')}><Num v={s.value} /></span>
+            <span className={'mt-3 block text-[14px] leading-snug ' + (hero ? 'text-white/80' : 'text-[var(--ink-2)]')}>{s.note}</span>
+          </>
+        )
+        const cls = 'block h-full rounded-[18px] border p-5 no-underline shadow-[0_12px_30px_rgba(16,32,64,.08)] transition-transform hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:transform-none ' + (hero ? 'border-transparent bg-gradient-to-br from-[#25427F] to-[#14244f]' : 'border-[var(--sheet-line)] bg-[var(--sheet)]')
+        return s.href ? <a key={s.label} href={s.href} className={cls}>{inner}</a> : <div key={s.label} className={cls}>{inner}</div>
+      })}
     </section>
   )
 }
@@ -48,6 +58,7 @@ export function DashVisits({ days }: { days: DayStat[] }) {
   return (
     <div className="edif-bui flex flex-col gap-4">
       <VisitsChartCard data={data} />
+      <WeeklyBars cur={cur} prev={prev} />
       {top.length > 0 && (
         <section className="rounded-[18px] border border-[var(--sheet-line)] bg-[var(--sheet)] p-5 shadow-[0_10px_28px_rgba(16,32,64,.07)]">
           <h3 className="flex items-center gap-2.5 text-[15px] font-bold text-[var(--navy-t)]"><span className="h-0.5 w-3.5 rounded bg-[#C29B38]" aria-hidden />Most visited pages, last 30 days</h3>
@@ -63,5 +74,32 @@ export function DashVisits({ days }: { days: DayStat[] }) {
         </section>
       )}
     </div>
+  )
+}
+
+/** Visits by week: this period in navy, the one before in gold, side by side. */
+function WeeklyBars({ cur, prev }: { cur: DayStat[]; prev: DayStat[] }) {
+  const sum = (a: DayStat[]) => a.reduce((n, d) => n + d.n, 0)
+  const weeks = Array.from({ length: Math.ceil(cur.length / 7) }, (_, i) => ({ week: `Wk ${i + 1}`, now: sum(cur.slice(i * 7, i * 7 + 7)), before: sum(prev.slice(i * 7, i * 7 + 7)) }))
+  if (weeks.length < 2) return null
+  return (
+    <section className="rounded-[18px] border border-[var(--sheet-line)] bg-[var(--sheet)] p-5 shadow-[0_10px_28px_rgba(16,32,64,.07)]" aria-label="Visits by week">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="flex items-center gap-2.5 text-[15px] font-bold text-[var(--navy-t)]"><span className="h-0.5 w-3.5 rounded bg-[#C29B38]" aria-hidden />Visits by week</h3>
+        <p className="flex gap-3 text-[12px] text-[var(--ink-2)]"><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-sm bg-[#C29B38]" />Before</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-sm bg-[#1E3570]" />Latest</span></p>
+      </div>
+      <div className="mt-3 h-52">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={weeks} barGap={4} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="var(--hair)" />
+            <XAxis dataKey="week" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: 'var(--ink-3)' }} />
+            <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: 'var(--ink-3)' }} allowDecimals={false} />
+            <Tooltip cursor={{ fill: 'var(--chip)' }} contentStyle={{ borderRadius: 10, border: '1px solid var(--sheet-line)', fontSize: 13 }} />
+            <Bar dataKey="before" name="Before" fill="#C29B38" radius={[5, 5, 0, 0]} maxBarSize={18} isAnimationActive={false} />
+            <Bar dataKey="now" name="Latest" fill="#1E3570" radius={[5, 5, 0, 0]} maxBarSize={18} isAnimationActive={false} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </section>
   )
 }
