@@ -174,7 +174,7 @@ export function PulseNotes({ p }: { p: Pulse }) {
   if (p.backup) notes.push({ k: 'Backup', v: p.backup.text, tone: p.backup.ok ? 'ok' : 'warn' })
   return (
     <section className={cx(SHEET, '!py-4')}>
-      <dl className="grid gap-4 md:grid-cols-3 md:gap-0">
+      <dl className="grid gap-4 md:gap-0 md:[grid-template-columns:var(--cols)]" style={{ ['--cols' as string]: `repeat(${notes.length}, minmax(0, 1fr))` }}>
         {notes.map((n, i) => (
           <div key={n.k} className={cx('md:px-5', i === 0 && 'md:ps-0', i > 0 && 'md:border-s md:border-[var(--hair)]')}>
             <dt className="flex items-center gap-2 text-[12px] font-bold tracking-[.12em] text-[#85660F] uppercase">{n.tone && <span className={cx('size-2 rounded-full', n.tone === 'ok' ? 'bg-[#3E8E5A]' : 'bg-[#9B3D32]')} aria-hidden />}{n.k}</dt>

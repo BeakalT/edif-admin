@@ -80,12 +80,13 @@ export function DashVisits({ days }: { days: DayStat[] }) {
 /** Visits by week: this period in navy, the one before in gold, side by side. */
 function WeeklyBars({ cur, prev }: { cur: DayStat[]; prev: DayStat[] }) {
   const sum = (a: DayStat[]) => a.reduce((n, d) => n + d.n, 0)
-  const weeks = Array.from({ length: Math.ceil(cur.length / 7) }, (_, i) => ({ week: `Wk ${i + 1}`, now: sum(cur.slice(i * 7, i * 7 + 7)), before: sum(prev.slice(i * 7, i * 7 + 7)) }))
+  const wk = (d?: DayStat) => (d ? new Date(d.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Africa/Addis_Ababa' }) : '')
+  const weeks = Array.from({ length: Math.ceil(cur.length / 7) }, (_, i) => ({ week: wk(cur[i * 7]), now: sum(cur.slice(i * 7, i * 7 + 7)), before: sum(prev.slice(i * 7, i * 7 + 7)) }))
   if (weeks.length < 2) return null
   return (
     <section className="rounded-[18px] border border-[var(--sheet-line)] bg-[var(--sheet)] p-5 shadow-[0_10px_28px_rgba(16,32,64,.07)]" aria-label="Visits by week">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2.5 text-[15px] font-bold text-[var(--navy-t)]"><span className="h-0.5 w-3.5 rounded bg-[#C29B38]" aria-hidden />Visits by week</h3>
+        <h3 className="flex items-center gap-2.5 text-[15px] font-bold text-[var(--navy-t)]"><span className="h-0.5 w-3.5 rounded bg-[#C29B38]" aria-hidden />Visits per week</h3>
         <p className="flex gap-3 text-[12px] text-[var(--ink-2)]"><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-sm bg-[#C29B38]" />Before</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-sm bg-[#1E3570]" />Latest</span></p>
       </div>
       <div className="mt-3 h-52">
@@ -95,8 +96,8 @@ function WeeklyBars({ cur, prev }: { cur: DayStat[]; prev: DayStat[] }) {
             <XAxis dataKey="week" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: 'var(--ink-3)' }} />
             <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: 'var(--ink-3)' }} allowDecimals={false} />
             <Tooltip cursor={{ fill: 'var(--chip)' }} contentStyle={{ borderRadius: 10, border: '1px solid var(--sheet-line)', fontSize: 13 }} />
-            <Bar dataKey="before" name="Before" fill="#C29B38" radius={[5, 5, 0, 0]} maxBarSize={18} isAnimationActive={false} />
-            <Bar dataKey="now" name="Latest" fill="#1E3570" radius={[5, 5, 0, 0]} maxBarSize={18} isAnimationActive={false} />
+            <Bar dataKey="before" name="Previous period" fill="#C29B38" radius={[5, 5, 0, 0]} maxBarSize={18} isAnimationActive={false} />
+            <Bar dataKey="now" name="This period" fill="#1E3570" radius={[5, 5, 0, 0]} maxBarSize={18} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </div>

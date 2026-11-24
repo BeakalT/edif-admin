@@ -74,7 +74,7 @@ export function HealthRings({ seo, security }: Health) {
               <Ring pct={pct} color="#C29B38">{pct}%</Ring>
               <div className="min-w-0 text-[14px] leading-snug text-[var(--ink-2)]">
                 <p className="text-[15px] font-semibold text-[var(--ink)]">Search descriptions</p>
-                <p>{seo.missing === 0 ? 'All pages have one.' : `${done} of ${seo.total} pages have one. ${seo.missing} missing.`}</p>
+                <p>{seo.missing === 0 ? 'All pages have one.' : `${done} of ${seo.total} pages have a description.`}</p>
                 {seo.missing > 0 && <a href={seo.href} className="mt-1 inline-block font-semibold text-[var(--navy-t)]">Fix next →</a>}
               </div>
             </div>
@@ -85,7 +85,7 @@ export function HealthRings({ seo, security }: Health) {
               <Ring pct={pct} color="#1E3570">{done}/{security.total}</Ring>
               <div className="min-w-0 text-[14px] leading-snug text-[var(--ink-2)]">
                 <p className="text-[15px] font-semibold text-[var(--ink)]">Two-factor sign-in</p>
-                <p>{security.without === 0 ? 'Enabled for everyone.' : `${security.without} not set up.`}</p>
+                <p>{security.without === 0 ? 'Enabled for everyone.' : `${security.without} of ${security.total} accounts without it.`}</p>
                 {security.without > 0 && <a href={security.href} className="mt-1 inline-block font-semibold text-[var(--navy-t)]">View users →</a>}
               </div>
             </div>
