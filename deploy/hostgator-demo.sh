@@ -20,6 +20,16 @@ EOF
   echo "Created .env (edit SMTP_* later if you want mail)."
 fi
 npm ci --no-audit --no-fund
+# Fresh database from the real-content seeds only. No demo accounts, no test records. Your local edif.db is never used or touched.
+if [ ! -f "$HOME/edif-data/edif.db" ]; then
+  export IMG_DIR="$APP/public/images"
+  set -a; . ./.env; set +a
+  NODE_ENV=development npx payload run scripts/sync-schema.ts
+  for f in seed seed2 seed3; do NODE_ENV=development npx payload run scripts/$f.ts; done
+  # Sample tenders, vacancies and an event for the review demo: run with SAMPLES=1
+  [ "${SAMPLES:-0}" = "1" ] && NODE_ENV=development npx payload run scripts/demo-content.ts
+fi
 npm run build
 cp -R .next/static .next/standalone/.next/ ; cp -R public .next/standalone/
+echo "Open /admin once to create the first administrator (your own email and a new password)."
 echo "Built. In cPanel > Setup Node.js App: root=$APP, startup file=.next/standalone/server.js, then Restart."
