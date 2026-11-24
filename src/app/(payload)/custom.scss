@@ -1063,3 +1063,20 @@ html[data-theme='dark'] .edif-board .edif-tl__i::before { background: var(--edif
 .edif-navhome__me small { font-size: 0.78rem; opacity: 0.75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .edif-navhome__me em { font-style: normal; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--edif-gold-soft); font-weight: 700; margin-top: 3px; }
 :root:not([data-theme='dark']) { --theme-bg: #eef2f9; }
+
+/* ---------- dashboard layout: main column and a side column ---------- */
+.edif-board__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 16px; }
+.edif-board__bar > .edif-bui { margin: 0 !important; }
+.edif-board__bar > .edif-bui:first-child { flex: 0 1 320px; }
+.edif-board__bar > .edif-bui:last-child { flex: 1 1 auto; }
+.edif-board__cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; margin-top: 20px; align-items: start; }
+.edif-board__main, .edif-board__side { display: grid; gap: 20px; min-width: 0; align-content: start; }
+.edif-board__main > .edif-bui, .edif-board__side > .edif-bui { margin: 0; }
+.edif-board__main > .edif-board__sheet { margin: 0; }
+@media (min-width: 1200px) {
+  .edif-board__cols { grid-template-columns: minmax(0, 1fr) 360px; }
+}
+.edif-board .edif-dash__hero { padding: 20px 28px; }
+.edif-board .edif-dash__hero h2 { font-size: clamp(1.4rem, 2vw, 1.75rem); margin: 4px 0 2px; }
+.edif-board .edif-dash__hero p { font-size: 0.95rem; }
+.edif-board .edif-dash__am { margin: 0 0 4px !important; font-size: 0.9rem; }

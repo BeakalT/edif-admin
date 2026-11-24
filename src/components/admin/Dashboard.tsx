@@ -183,17 +183,15 @@ export default async function Dashboard(props: any) {
         </div>
       </section>
 
-      <CommandPalette commands={cmds} />
-      <QuickActions items={quick} />
+      <div className="edif-board__bar">
+        <CommandPalette commands={cmds} />
+        <QuickActions items={quick} />
+      </div>
       <DashStats stats={dashStats} />
       <PulseNotes p={pulse} />
-      {(canEdit || staffOnly) && (
-        <div className="edif-board__split edif-board__split--even">
-          {canEdit && <Resume items={resume} />}
-          {staffOnly && <Inbox items={inbox} total={(msgs as any).totalDocs} href={adminUrl('/collections/messages')} />}
-        </div>
-      )}
 
+      <div className="edif-board__cols">
+        <div className="edif-board__main">
       <section className="edif-board__sheet">
         <h3>To do</h3>
         {(featured || rows.length) ? (
@@ -213,18 +211,10 @@ export default async function Dashboard(props: any) {
           </div>
         ) : <p className="edif-board__clear">Nothing to do.</p>}
       </section>
-
-      <div className="edif-board__split">
-        <ClosingSoon items={closingItems} />
-        <HealthRings {...health} />
-      </div>
-
-      <DashCalendar events={calEvents} todayKey={todayKey} />
-
-      <Pipeline p={pipe} />
-
-      <div className="edif-board__split">
-        {!!content.length && (
+          {hasHealth && <DashVisits days={days60} />}
+          <DashCalendar events={calEvents} todayKey={todayKey} />
+          <Pipeline p={pipe} />
+          {!!content.length && (
           <section className="edif-board__sheet">
             <h3>Content</h3>
             <ul className="edif-board__meters">
@@ -242,10 +232,15 @@ export default async function Dashboard(props: any) {
             <p className="edif-board__key"><i className="pub" />Published<i className="dr" />Draft</p>
           </section>
         )}
-        {hasHealth && <DashVisits days={days60} />}
+          {!!acts.length && <Activity items={acts} href={adminUrl('/collections/audit-log')} />}
+        </div>
+        <aside className="edif-board__side">
+          <ClosingSoon items={closingItems} />
+          <HealthRings {...health} />
+          {canEdit && <Resume items={resume} />}
+          {staffOnly && <Inbox items={inbox} total={(msgs as any).totalDocs} href={adminUrl('/collections/messages')} />}
+        </aside>
       </div>
-
-      {!!acts.length && <Activity items={acts} href={adminUrl('/collections/audit-log')} />}
     </div>
   )
 }
