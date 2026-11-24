@@ -7,6 +7,7 @@ import { img, tel } from '../data/content'
 import { ArrowUpRight, Chevron } from './ui'
 import { NewsletterForm } from './Forms'
 import { Beacon } from './Beacon'
+import { PayoutScamWarning, SiteToaster } from './SiteToaster'
 
 const NEWSLETTER_ON = process.env.NEXT_PUBLIC_NEWSLETTER === 'on' // hidden for now; set NEXT_PUBLIC_NEWSLETTER=on and rebuild to bring it back
 
@@ -47,8 +48,9 @@ function Brand() {
   const mark = logo?.color || img('logoB.svg')
   return (
     <Link className="brand" to="/" aria-label="Ethiopian Deposit Insurance Fund, home">
-      {!logo?.textOnly && <img src={mark} alt="" />}
-      <span>{logo?.wordmark || 'EDIF'}<small>Ethiopian Deposit Insurance Fund</small></span>
+      {logo?.textOnly
+        ? <span>{logo?.wordmark || 'EDIF'}<small>Ethiopian Deposit Insurance Fund</small></span>
+        : <img className="brand-full" src={logo?.color ? mark : img('logoN.svg')} alt="Ethiopian Deposit Insurance Fund" />}
     </Link>
   )
 }
@@ -73,7 +75,14 @@ function NoticeBar({ n }: { n: Notice }) {
 
 function Header() {
   const cms = useCms()
-  const NAV: NavEntry[] = cms.nav ? cms.nav.map(toEntry) : DEFAULT_NAV
+  const ALL: NavEntry[] = cms.nav ? cms.nav.map(toEntry) : DEFAULT_NAV
+  const WORK: NavEntry = { label: 'Work with us', to: '/tenders', children: [
+    { to: '/tenders', label: 'Tenders', desc: 'Open procurement notices and the archive' },
+    { to: '/vacancies', label: 'Jobs', desc: 'Current vacancies at the Fund' },
+  ] }
+  const rest = ALL.filter((n) => !/^\/(tenders|jobs|careers|vacanc)/i.test(n.to) && !/^work with us$/i.test(n.label))
+  const ci = rest.findIndex((n) => /^\/contact/i.test(n.to))
+  const NAV: NavEntry[] = ci < 0 ? [...rest, WORK] : [...rest.slice(0, ci), WORK, ...rest.slice(ci)]
   const [open, setOpen] = useState(false)
   const [drop, setDrop] = useState<string | null>(null)
   const [find, setFind] = useState(false)
@@ -287,6 +296,8 @@ export default function Layout({ children }: { children: ReactNode }) {
       <a className="skip" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById('main')?.focus() }}>Skip to main content</a>
       <ScrollUI />
       <Beacon />
+      <SiteToaster />
+      <PayoutScamWarning />
       {cms.notice && <NoticeBar n={cms.notice} />}
       <Header />
       <main id="main" tabIndex={-1} key={pathname}>

@@ -1,7 +1,9 @@
 'use client'
 import { Link } from '../router'
 import Calculator from '../components/Calculator'
-import { Compare, FaqList, Rules, Steps } from '../components/sections'
+import DepositTypes from '../components/DepositTypes'
+import { Compare, FaqList, Rules } from '../components/sections'
+import { PayoutTimeline } from '../components/PayoutTimeline'
 import { Arrow, Bank, Calc, Check, Clock, Curves, NextLinks, PageHero, SecHead, Shield, SubNav, TLink, protectionNav } from '../components/ui'
 import { useCms } from '../cms-context'
 import { coveredDetail, exclusions, type Faq } from '../data/content'
@@ -100,16 +102,7 @@ export function Coverage() {
       <section className="section">
         <div className="container">
           <SecHead eyebrow="Covered" title="Eight kinds of account," em="all protected" lead="Each is protected at every member bank and microfinance institution, up to the Birr 100,000 limit per depositor." />
-          <div className="types">
-            {coveredDetail.map((c) => (
-              <div className="type" key={c.t}>
-                <Check />
-                <span className="rule" />
-                <h3>{c.t}</h3>
-                <p>{c.d}</p>
-              </div>
-            ))}
-          </div>
+          <DepositTypes items={coveredDetail.map((c) => ({ title: c.t, text: c.d }))} />
         </div>
       </section>
 
@@ -168,9 +161,9 @@ export function Coverage() {
 export function CalculatorPage() {
   const { faqs } = useCms()
   const examples = [
-    { t: 'One account', rows: [['Savings at Bank A', 80000]], prot: 80000, over: 0, note: 'Below the limit, so all of it is protected.' },
-    { t: 'Two accounts, same bank', rows: [['Savings at Bank A', 70000], ['Time deposit at Bank A', 50000]], prot: 100000, over: 20000, note: 'Added together: Birr 120,000. Birr 20,000 is above the limit.' },
-    { t: 'Accounts at two banks', rows: [['Savings at Bank A', 90000], ['Savings at Bank B', 90000]], prot: 180000, over: 0, note: 'Each bank is protected separately, so both are covered in full.' },
+    { t: 'One account', rows: [['Savings at Commercial Bank of Ethiopia', 80000]], prot: 80000, over: 0, note: 'Below the limit, so all of it is protected.' },
+    { t: 'Two accounts, same bank', rows: [['Savings at Commercial Bank of Ethiopia', 70000], ['Time deposit at Commercial Bank of Ethiopia', 50000]], prot: 100000, over: 20000, note: 'Added together: Birr 120,000. Birr 20,000 is above the limit.' },
+    { t: 'Accounts at two banks', rows: [['Savings at Commercial Bank of Ethiopia', 90000], ['Savings at Awash Bank', 90000]], prot: 180000, over: 0, note: 'Each bank is protected separately, so both are covered in full.' },
   ] as const
   const f = (n: number) => n.toLocaleString('en-US')
   return (
@@ -190,6 +183,10 @@ export function CalculatorPage() {
               <li><b>2</b><span><strong>Enter the balance</strong> in Birr, including interest. Convert foreign currency to Birr first.</span></li>
               <li><b>3</b><span><strong>Add every account</strong>, including several at the same institution.</span></li>
             </ol>
+            <div className="calc-eg">
+              <span>Worked example</span>
+              <p>Birr 130,000 across two accounts at one bank: <strong>Birr 100,000 is protected</strong> and Birr 30,000 is above the limit. The same money split between two banks is <strong>fully protected</strong>.</p>
+            </div>
             <p className="source">Nothing you enter leaves your device.</p>
           </div>
           <Calculator />
@@ -245,7 +242,7 @@ export function Payout() {
       <section className="section bg-ice">
         <div className="container">
           <SecHead eyebrow="At a glance" title="Four stages," em="ninety days" />
-          <Steps more={false} />
+          <PayoutTimeline />
         </div>
       </section>
 

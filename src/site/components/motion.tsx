@@ -23,11 +23,10 @@ export function useInView<T extends Element>(threshold = 0.2): [RefObject<T | nu
 
 /** Counts from 0 to `to` when `run` turns true. Shows the final value without motion. */
 export function CountUp({ to, run, duration = 1600 }: { to: number; run: boolean; duration?: number }) {
-  const [v, setV] = useState(() => (reduced() ? to : 0))
+  const [v, setV] = useState(to)
   useEffect(() => {
     if (!run) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- motion state starts after hydration; reduced-motion users get the final value
-    if (reduced()) { setV(to); return }
+    if (reduced()) return
     let raf = 0
     const t0 = performance.now()
     const tick = (t: number) => {

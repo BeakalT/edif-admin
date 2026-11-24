@@ -1,4 +1,5 @@
 'use client'
+import { useSyncExternalStore } from 'react'
 import { Link } from '../router'
 import { useCms } from '../cms-context'
 import { covered, docKinds, exclusions, img, mainExclusions, payoutSteps, type Doc, type Faq } from '../data/content'
@@ -137,13 +138,30 @@ export function Steps({ more = true }: { more?: boolean }) {
   )
 }
 
-export function FaqList({ items, openFirst = true }: { items: Faq[]; openFirst?: boolean }) {
+/** Wraps matches of the search words in a gold <mark>. Built from text nodes, so nothing is ever injected as HTML. */
+function Mark({ text, words }: { text: string; words: string[] }) {
+  if (!words.length) return <>{text}</>
+  const re = new RegExp('(' + words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'ig')
+  return <>{text.split(re).map((part, i) => (i % 2 ? <mark key={i}>{part}</mark> : part))}</>
+}
+
+const noopSub = () => () => {}
+/** The ?q= search term in the address bar, read without Next's useSearchParams (which would force a Suspense boundary). Empty on the server. */
+const useUrlQuery = () => useSyncExternalStore(noopSub, () => new URLSearchParams(window.location.search).get('q') || '', () => '')
+
+/** `highlight` is the /faq page's own search box. Anywhere else (CMS blocks, home, protection pages) the ?q= term from the address bar is used, and matching answers open. */
+export function FaqList({ items, openFirst = true, highlight }: { items: Faq[]; openFirst?: boolean; highlight?: string }) {
+  const urlQ = useUrlQuery()
+  const term = highlight ?? urlQ
+  const words = term.trim().split(/\s+/).filter((w) => w.length > 1)
+  const hit = (f: Faq) => words.some((w) => (f.q + ' ' + f.a).toLowerCase().includes(w.toLowerCase()))
+  const fromUrl = highlight === undefined && words.length > 0
   return (
     <div className="faq">
       {items.map((f, i) => (
-        <details key={f.q} open={openFirst && i === 0 ? true : undefined}>
-          <summary>{f.q}<i /></summary>
-          <p>{f.a}</p>
+        <details key={f.q + (fromUrl ? term : '')} open={(fromUrl ? hit(f) : openFirst && i === 0) ? true : undefined}>
+          <summary><span><Mark text={f.q} words={words} /></span><i /></summary>
+          <p><Mark text={f.a} words={words} /></p>
         </details>
       ))}
     </div>

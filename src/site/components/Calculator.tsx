@@ -1,16 +1,17 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCms } from '../cms-context'
 import { LIMIT } from '../data/content'
 import { Tween } from './motion'
 
 const fmt = (n: number) => Math.round(n).toLocaleString('en-US')
 type Row = { i: string; b: number }
-const EXAMPLE: Row[] = [
-  { i: 'Commercial Bank of Ethiopia', b: 65000 },
-  { i: 'Commercial Bank of Ethiopia', b: 50000 },
-  { i: 'Awash Bank', b: 30000 },
-]
+/** Example accounts use real members: Commercial Bank of Ethiopia and Awash Bank when listed, otherwise the first two names. */
+function exampleRows(names: string[]): Row[] {
+  const a = names.find((n) => /commercial bank of ethiopia/i.test(n)) ?? names[0] ?? 'Commercial Bank of Ethiopia'
+  const b = names.find((n) => /awash/i.test(n)) ?? names.find((n) => n !== a) ?? a
+  return [{ i: a, b: 65000 }, { i: a, b: 50000 }, { i: b, b: 30000 }]
+}
 
 export default function Calculator() {
   const { banks, microfinance } = useCms()
@@ -18,9 +19,26 @@ export default function Calculator() {
   const MFIS = microfinance.map((m) => m.name)
   const [rows, setRows] = useState<Row[]>([{ i: '', b: 0 }])
   const [example, setExample] = useState(false)
+  const [note, setNote] = useState('')
+  const noteT = useRef<ReturnType<typeof setTimeout>>(undefined)
   const [focusIdx, setFocusIdx] = useState<number | null>(null)
   const box = useRef<HTMLDivElement>(null)
   const calcRef = useRef<HTMLDivElement>(null)
+
+  // Restore a shared link (?calc=[["Institution",amount],...]). Only known institutions and sane amounts are accepted.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('calc')
+    if (!q) return
+    const known = new Set([...banks.map((b) => b.name), ...microfinance.map((m) => m.name)])
+    let next: Row[] = []
+    try {
+      const arr = JSON.parse(q)
+      if (Array.isArray(arr)) next = arr.slice(0, 12).filter((x) => Array.isArray(x) && known.has(x[0]) && Number.isFinite(x[1]) && x[1] > 0 && x[1] < 1e12).map((x) => ({ i: String(x[0]), b: Math.round(x[1]) }))
+    } catch { /* ignore a malformed link */ }
+    if (!next.length) return
+    const id = requestAnimationFrame(() => setRows(next))
+    return () => cancelAnimationFrame(id)
+  }, [banks, microfinance])
 
   const update = (n: number, patch: Partial<Row>) => {
     setRows((r) => r.map((x, k) => (k === n ? { ...x, ...patch } : x)))
@@ -36,13 +54,27 @@ export default function Calculator() {
     const g = groups.get(r.i) || { t: 0, n: 0 }
     g.t += r.b; g.n++; groups.set(r.i, g)
   })
-  let prot = 0, over = 0
+  let prot = 0
   const list = [...groups].map(([k, g]) => {
     const p = Math.min(g.t, LIMIT), o = Math.max(0, g.t - LIMIT)
-    prot += p; over += o
-    const scale = Math.max(LIMIT * 1.25, g.t)
-    return { k, g, p, o, pw: (p / scale) * 100, ow: (o / scale) * 100, lim: (LIMIT / scale) * 100 }
+    prot += p
+    return { k, g, p, o, pw: (p / LIMIT) * 100 }
   })
+  const flash = (msg: string) => { setNote(msg); clearTimeout(noteT.current); noteT.current = setTimeout(() => setNote(''), 3500) }
+  const copy = async (text: string, ok: string) => {
+    try { await navigator.clipboard.writeText(text); flash(ok) } catch { flash('Could not copy. You can select the text and copy it instead.') }
+  }
+  const copyResult = () => {
+    const lines = list.map(({ k, g, p }) => `${k}: balance Birr ${fmt(g.t)}, protected Birr ${fmt(p)}`)
+    return copy(`EDIF coverage estimate\n${lines.join('\n')}\nTotal protected: Birr ${fmt(prot)}.\nAn estimate only: the Fund confirms each depositor's amount at payout.`, 'Result copied')
+  }
+  const copyLink = () => {
+    const data = rows.filter((r) => r.i && r.b > 0).map((r) => [r.i, r.b])
+    const url = new URL(window.location.href)
+    url.search = ''; url.hash = ''
+    if (data.length) url.searchParams.set('calc', JSON.stringify(data))
+    return copy(url.toString(), data.length ? 'Link copied. It holds the institutions and amounts you entered.' : 'Link copied')
+  }
   const dirty = rows.length > 1 || rows.some((r) => r.i || r.b)
 
   return (
@@ -51,7 +83,7 @@ export default function Calculator() {
         <div className="calc-top">
           <span className="legend" id="acc-legend">Your accounts</span>
           <button type="button" className="ex-btn" onClick={() => {
-            setRows(EXAMPLE.map((r) => ({ ...r }))); setExample(true)
+            setRows(exampleRows(BANKS.length ? BANKS : MFIS)); setExample(true)
             calcRef.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' })
           }}>Show an example</button>
         </div>
@@ -89,37 +121,54 @@ export default function Calculator() {
       </form>
       <div className="calc-out" aria-live="polite">
         <div className="out-head"><span className="label">Your result</span>{example && <span className="ex-tag">Example figures</span>}</div>
-        <div className="totals">
-          <div className="t-main">
-            <span className="t-k">Protected</span>
-            <b className="num">Birr <Tween value={prot} /></b>
-            <small>{groups.size ? (groups.size > 1 ? `Across ${groups.size} institutions` : 'At 1 institution') : 'Up to Birr 100,000 at each institution'}</small>
+        {groups.size > 0 ? (
+          <>
+            <div className="totals">
+              <div className="t-main">
+                <span className="t-k">Protected</span>
+                <b className="num">Birr <Tween value={prot} /></b>
+                <small>{groups.size > 1 ? `Across ${groups.size} institutions` : 'At 1 institution'}</small>
+              </div>
+              <div className="t-side">
+                <span className="t-k">Limit</span>
+                <b className="num">Birr {fmt(LIMIT)}</b>
+                <small>Per depositor, per institution</small>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="calc-empty">
+            <p className="empty-lead">Each depositor is protected up to <strong>Birr {fmt(LIMIT)}</strong> at each member institution.</p>
+            <div className="split is-empty" aria-hidden="true"><i className="split-lim" /></div>
+            <p className="empty-key"><span>Birr 0</span><span>Birr {fmt(LIMIT)} limit</span></p>
           </div>
-          <div className={'t-side' + (over ? ' warn' : '')}>
-            <span className="t-k">Not protected</span>
-            <b className="num">Birr <Tween value={over} /></b>
-            <small>{over ? 'Above the limit' : 'Nothing above the limit'}</small>
-          </div>
-        </div>
+        )}
         {!groups.size && <p className="res-hint">{pending ? 'Choose the institution for each account to see your result.' : 'Enter a balance to see how much is protected.'}</p>}
-        {example && <p className="ex-explain">Two accounts at the same bank are added together (Birr 115,000), so Birr 15,000 is above the limit. The account at the second bank is protected separately.</p>}
+        {example && list.length > 1 && <p className="ex-explain">Two accounts at the same bank are added together (Birr {fmt(list[0].g.t)}), and the Fund protects up to Birr {fmt(LIMIT)} of that. The account at the second bank is protected separately.</p>}
         {groups.size > 0 && (
           <ul className="groups">
-            {list.map(({ k, g, p, o, pw, ow, lim }, i) => (
-              <li key={k} className={o ? 'is-over' : 'is-ok'} style={{ ['--i' as string]: i }}>
+            {list.map(({ k, g, p, o, pw }, i) => (
+              <li key={k} className="is-ok" style={{ ['--i' as string]: i }}>
                 <div className="g-top"><strong>{k}</strong><span className="num">Birr {fmt(g.t)}</span></div>
                 <small>{g.n > 1 ? `${g.n} accounts added together` : '1 account'}</small>
                 <span className="meter" aria-hidden="true">
-                  <i className="ok" style={{ width: pw + '%' }} /><i className="over" style={{ left: pw + '%', width: ow + '%' }} /><i className="lim" style={{ left: lim + '%' }}><b>100,000</b></i>
+                  <i className="ok" style={{ width: pw + '%' }} /><i className="lim" style={{ left: '100%' }}><b>100,000</b></i>
                 </span>
                 <p className="g-status">
-                  {o ? <><span className="warn-t">Birr {fmt(o)} above the limit</span> · Birr {fmt(p)} protected</> : <span className="ok-t">Fully protected</span>}
+                  <span className="ok-t">Birr {fmt(p)} protected{o ? ` (the limit per institution)` : ''}</span>
                 </p>
               </li>
             ))}
           </ul>
         )}
         {pending > 0 && groups.size > 0 && <p className="pending">{pending === 1 ? '1 account needs' : pending + ' accounts need'} an institution before it can be counted.</p>}
+        {groups.size > 0 && (
+          <div className="calc-actions">
+            <button type="button" className="calc-copybtn" onClick={copyResult}>Copy result</button>
+            <button type="button" className="calc-copybtn" onClick={copyLink}>Copy link</button>
+          </div>
+        )}
+        <p className="calc-flash" role="status">{note}</p>
         <p className="calc-note">An estimate only. At payout, the Fund nets off any matured loans and deposits held as collateral, and confirms each depositor’s amount.</p>
       </div>
     </div>

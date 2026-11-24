@@ -1043,3 +1043,43 @@ html[data-theme='dark'] .edif-board__mark { background: #34508f; }
 .edif-board .edif-tl__i::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--edif-navy); }
 html[data-theme='dark'] .edif-board .edif-tl__i::before { background: var(--edif-gold); }
 @media (prefers-reduced-motion: reduce) { .edif-board__card { transition: none; } .edif-board__card:hover { transform: none; } }
+
+/* Dashboard: stat cards moved out of the hero into BoardUI cards below it */
+.edif-dash__hero { grid-template-columns: minmax(0, 1fr); }
+.edif-board > .edif-bui { margin-top: 20px; }
+.edif-board > .edif-bui { margin-top: 20px; }
+.edif-board > .edif-board__split > .edif-bui { margin: 0; }
+.edif-dash__am { margin: 2px 0 8px !important; font-size: 1rem; color: var(--edif-gold-soft); opacity: 1 !important; font-weight: 600; }
+.edif-board__split--even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.edif-board__split--even:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 900px) { .edif-board__split--even { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- sidebar profile block ---------- */
+.edif-navhome__me { display: flex; align-items: center; gap: 12px; margin: 2px 4px 12px; padding: 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.07); text-decoration: none; color: #fff; transition: background-color .15s; }
+.edif-navhome__me:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.edif-navhome__avatar { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #fff; color: var(--edif-navy); font-family: var(--edif-display); font-weight: 800; font-size: 1rem; box-shadow: 0 0 0 3px var(--edif-gold); }
+.edif-navhome__me span:last-child { display: grid; min-width: 0; line-height: 1.25; }
+.edif-navhome__me strong { font-weight: 700; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.edif-navhome__me small { font-size: 0.78rem; opacity: 0.75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.edif-navhome__me em { font-style: normal; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--edif-gold-soft); font-weight: 700; margin-top: 3px; }
+:root:not([data-theme='dark']) { --theme-bg: #eef2f9; }
+
+/* ---------- dashboard layout: main column and a side column ---------- */
+.edif-board__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 16px; }
+.edif-board__bar > .edif-bui { margin: 0 !important; }
+.edif-board__bar > .edif-bui:first-child { flex: 0 1 320px; }
+.edif-board__bar > .edif-bui:last-child { flex: 1 1 auto; }
+.edif-board__cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; margin-top: 20px; align-items: start; }
+.edif-board__main, .edif-board__side { display: grid; gap: 20px; min-width: 0; align-content: start; }
+.edif-board__main > .edif-bui, .edif-board__side > .edif-bui { margin: 0; }
+.edif-board__main > .edif-board__sheet { margin: 0; }
+@media (min-width: 1200px) {
+  .edif-board__cols { grid-template-columns: minmax(0, 1fr) 360px; }
+}
+.edif-board .edif-dash__hero { padding: 20px 28px; }
+.edif-board .edif-dash__hero h2 { font-size: clamp(1.4rem, 2vw, 1.75rem); margin: 4px 0 2px; }
+.edif-board .edif-dash__hero p { font-size: 0.95rem; }
+.edif-board .edif-dash__am { margin: 0 0 4px !important; font-size: 0.9rem; }
+
+.edif-bell__list button { white-space: normal; text-align: left; align-items: flex-start; }
+.edif-bell__list button .edif-bell__body, .edif-bell__list a .edif-bell__body { white-space: normal; text-overflow: clip; overflow-wrap: anywhere; }

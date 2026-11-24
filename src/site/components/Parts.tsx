@@ -2,12 +2,14 @@
 import { useEffect, useRef } from 'react'
 import { Link } from '../router'
 import Calculator from './Calculator'
+import DepositTypes from './DepositTypes'
 import { Arrow, Bank, Calc, Check, Clock, Cross, Curves, DocIcon, Download, NextLinks, PageHero, SecHead, Shield, SubNav, TLink, aboutNav, protectionNav } from './ui'
 import { MemberDirectory as Directory } from '../pages/Members'
 import { CountUp, spotlight, useInView } from './motion'
 import { useCms } from '../cms-context'
 import { tel } from '../data/content'
 import { FaqList } from './sections'
+import { BoardCards, type BoardPerson } from './BoardCards'
 import { safeHref } from '../../lib/safeUrl'
 
 /**
@@ -30,13 +32,12 @@ function Count({ to, suffix = '' }: { to: number; suffix?: string }) {
   useEffect(() => {
     const el = ref.current!, fmt = (n: number) => Math.round(n).toLocaleString('en-US')
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(to) + suffix; return }
-    el.textContent = '0' + suffix
     let raf = 0
     const id = setTimeout(() => {
       const t0 = performance.now(), d = 1600
       const f = (t: number) => { const k = Math.min(1, (t - t0) / d), e = 1 - Math.pow(1 - k, 4); el.textContent = fmt(to * e) + suffix; if (k < 1) raf = requestAnimationFrame(f) }
       raf = requestAnimationFrame(f)
-    }, 700)
+    }, 0)
     return () => { clearTimeout(id); cancelAnimationFrame(raf) }
   }, [to, suffix])
   return <span ref={ref}>{to.toLocaleString('en-US') + suffix}</span>
@@ -209,29 +210,10 @@ export function OrgChart(p: { board: string; side: string; chain: { text: string
   )
 }
 
-export function Board(p: { people: { name: string; jobTitle: string; photo?: string }[]; seatsTitle?: string; seats?: { text: string }[]; note?: string }) {
-  const [first, ...rest] = p.people
-  const [role, ...org] = (first?.jobTitle || '').split(', ')
+export function Board(p: { people: BoardPerson[]; seatsTitle?: string; seats?: { text: string }[]; note?: string }) {
   return (
     <>
-      {first && (
-        <div className="board">
-          <div className="mcard-hero">
-            <div className="pimg">{first.photo && <img src={first.photo} alt={first.name} />}</div>
-            <div><span className="k">{role}</span><h3>{first.name}</h3><p>{org.join(', ')}</p></div>
-          </div>
-          <ul className="members-list">
-            {rest.map((b) => (
-              <li key={b.name}>
-                {b.photo
-                  ? <span className="initials has-photo"><img src={b.photo} alt={b.name} loading="lazy" /></span>
-                  : <span className="initials">{b.name.replace('Ato ', '').split(' ').map((w) => w[0]).join('')}</span>}
-                <div><strong>{b.name}</strong><span>{b.jobTitle}</span></div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {p.people.length > 0 && <BoardCards people={p.people} />}
       {!!p.seats?.length && (
         <div className="board-seats"><h3>{p.seatsTitle || 'Seats on the Board'}</h3><ul>{T(p.seats).map((s, i) => <li key={i}>{s}</li>)}</ul>{p.note && <p className="source">{p.note}</p>}</div>
       )}
@@ -420,11 +402,7 @@ export function LinkCards({ items }: { items?: { icon?: string; title: string; t
 }
 
 export function TypeCards({ items }: { items?: { title: string; text?: string }[] }) {
-  return (
-    <div className="types">
-      {(items || []).map((c, i) => <div className="type" key={i}><Check /><span className="rule" /><h3>{c.title}</h3><p>{c.text}</p></div>)}
-    </div>
-  )
+  return <DepositTypes items={(items || []).map((c) => ({ title: c.title, text: c.text }))} />
 }
 
 export function ExclPanel({ items }: { items?: { text: string }[] }) {

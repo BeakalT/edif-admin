@@ -13,6 +13,9 @@ const isProd = process.env.NODE_ENV === 'production'
 const nextConfig: NextConfig = {
   output: 'standalone', // smallest runnable bundle for the container image
   poweredByHeader: false,
+  async redirects() {
+    return [{ source: '/careers', destination: '/vacancies', permanent: true }]
+  },
   async headers() {
     return [
       // keep the admin out of search results without naming a secret address in robots.txt

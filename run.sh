@@ -16,4 +16,12 @@ esac
 echo ""
 echo "Ready:  website  http://localhost:3100   admin  http://localhost:3100/admin"
 echo "Sign-in details are in README.txt"
-npm run start -- -p 3100
+if lsof -ti :3100 >/dev/null 2>&1; then
+  echo ""; echo "Port 3100 is already in use, so an older copy is probably still running:"; lsof -i :3100
+  echo "Stop it with:  kill -9 \$(lsof -ti :3100)   then run ./run.sh again."; exit 1
+fi
+# This app is built as "standalone", so it starts from the standalone server (next start does not work with it).
+cp -R .next/static .next/standalone/.next/ 2>/dev/null || true
+cp -R public .next/standalone/ 2>/dev/null || true
+case "$(grep -E '^DATABASE_URL=' .env | cut -d= -f2-)" in file:./*) export DATABASE_URL="file:$PWD/$(grep -E '^DATABASE_URL=' .env | cut -d= -f2- | sed 's#^file:\./##')" ;; esac
+PORT=3100 HOSTNAME=localhost exec node --env-file=.env .next/standalone/server.js

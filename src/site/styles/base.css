@@ -7,7 +7,7 @@
   --display:"Raleway","Noto Sans Ethiopic",system-ui,sans-serif;
   --body:"Nunito Sans","Noto Sans Ethiopic",system-ui,-apple-system,"Segoe UI",sans-serif;
   --r:12px; --r-sm:8px;
-  --maxw:1240px; --gutter:clamp(16px,3vw,32px);
+  --maxw:1320px; --gutter:clamp(20px,4vw,48px);
   --section:clamp(72px,3rem + 4vw,128px);
   --shadow:0 16px 32px -12px rgba(30,53,112,.18);
   --shadow-lg:0 30px 60px -24px rgba(15,29,68,.35);
@@ -908,3 +908,36 @@ select.field.is-empty{color:var(--muted)}
   .cmp-col h3{font-size:1.65rem}
 }
 @media (max-width:860px){ .cmp-sub{min-height:0} }
+
+.brand img.brand-full{height:52px;width:auto}
+.site-header.scrolled .brand img.brand-full{height:42px}
+@media(max-width:980px){.brand img.brand-full{height:40px}}
+.about-f img{height:84px;width:auto;margin-bottom:6px}
+.brand img.brand-full{height:66px}
+.site-header .bar{min-height:94px}
+.site-header.scrolled .brand img.brand-full{height:54px}
+.site-header.scrolled .bar{min-height:76px}
+@media(max-width:980px){.brand img.brand-full{height:46px}.site-header .bar{min-height:70px}.site-header.scrolled .brand img.brand-full{height:42px}}
+
+
+/* Compact Covered / Not covered */
+.cmp-col{padding:30px 34px 28px}
+.cmp-col h3{font-size:1.6rem;margin-top:4px}
+.cmp-sub{margin-top:6px;min-height:0;font-size:.95rem;line-height:1.5}
+.cmp-list{margin-top:18px}
+.cmp-list li{padding:9px 0;gap:12px;font-size:.97rem;line-height:1.4}
+.cmp-mark{width:20px;height:20px}
+.cmp-mark svg{width:18px;height:18px}
+.cmp-xl span:not(.cmp-mark){font-size:.9rem;line-height:1.45;margin-top:1px}
+.cmp-note{padding-top:18px}
+.cmp-note p{font-size:.92rem;line-height:1.5}
+.cmp-all{padding-top:16px}
+@media(min-width:861px){.cmp-yes .cmp-list{display:grid;grid-template-columns:1fr 1fr;column-gap:26px}.cmp-yes .cmp-list li:nth-child(odd):last-child{grid-column:auto}}
+@media(max-width:860px){.cmp-col{padding:24px 20px}.cmp-yes .cmp-list{display:block}}
+
+.calc-eg{margin-top:28px;padding:18px 20px;border-radius:12px;background:var(--cream,#F8F5EC);border:1px solid var(--line-2);border-left:3px solid var(--gold)}
+.calc-eg>span{font-family:var(--display);font-weight:800;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-2)}
+.calc-eg p{margin-top:6px;font-size:.96rem;line-height:1.55;color:var(--text)}
+.calc-eg strong{color:var(--head);font-family:var(--display)}
+.actions .btn{background:var(--gold-pale);color:var(--navy-3)}
+.actions .btn:hover{background:#efe3bd;color:var(--navy-3)}

@@ -12,13 +12,12 @@ function Count({ to, suffix = '' }: { to: number; suffix?: string }) {
   useEffect(() => {
     const el = ref.current!, fmt = (n: number) => Math.round(n).toLocaleString('en-US')
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(to) + suffix; return }
-    el.textContent = '0' + suffix
     let raf = 0
     const id = setTimeout(() => {
       const t0 = performance.now(), d = 1600
       const f = (t: number) => { const k = Math.min(1, (t - t0) / d), e = 1 - Math.pow(1 - k, 4); el.textContent = fmt(to * e) + suffix; if (k < 1) raf = requestAnimationFrame(f) }
       raf = requestAnimationFrame(f)
-    }, 700)
+    }, 0)
     return () => { clearTimeout(id); cancelAnimationFrame(raf) }
   }, [to, suffix])
   return <span ref={ref}>{to.toLocaleString('en-US') + suffix}</span>
@@ -88,6 +87,10 @@ export default function Home() {
               <li><b>02</b><span><strong>Enter the balance</strong> in Birr, including interest. Convert foreign currency to Birr first.</span></li>
               <li><b>03</b><span><strong>Add every account</strong>, including several at the same institution.</span></li>
             </ol>
+            <div className="calc-eg">
+              <span>Worked example</span>
+              <p>Birr 130,000 across two accounts at one bank: <strong>Birr 100,000 is protected</strong> and Birr 30,000 is above the limit. The same money split between two banks is <strong>fully protected</strong>.</p>
+            </div>
             <div className="calc-auto">
               <p><strong>Protection is automatic.</strong> You don’t need to apply, register or pay anything.</p>
               <TLink to="/deposit-protection">How coverage works</TLink>

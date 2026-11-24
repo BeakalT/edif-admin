@@ -1,0 +1,78 @@
+/* BoardUI for the admin dashboard only. Every semantic token lives on .edif-bui (see bui/theme.css), headings use Raleway and body text Nunito Sans.
+   Original note: BoardUI for the admin dashboard only: theme tokens + utilities, no global reset (no preflight), so the rest of the Payload admin is untouched. */
+@layer payload-default, theme, base, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "./bui/theme.css";
+@import "./bui/typography.css";
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant rtl (&:dir(rtl));
+@custom-variant ltr (&:dir(ltr));
+@keyframes number-fade{from{opacity:.35}to{opacity:1}}
+.animate-number-fade{animation:number-fade 220ms ease-out}
+@media (prefers-reduced-motion:reduce){.animate-number-fade{animation:none}}
+@utility shadow-2xs {
+  &:where(.dark .shadow-2xs) {
+    --tw-shadow: var(--shadow-2xs);
+  }
+}
+@utility shadow-xs {
+  &:where(.dark .shadow-xs) {
+    --tw-shadow: var(--shadow-xs);
+  }
+}
+@utility shadow-sm {
+  &:where(.dark .shadow-sm) {
+    --tw-shadow: var(--shadow-sm);
+  }
+}
+@utility shadow-md {
+  &:where(.dark .shadow-md) {
+    --tw-shadow: var(--shadow-md);
+  }
+}
+@utility shadow-lg {
+  &:where(.dark .shadow-lg) {
+    --tw-shadow: var(--shadow-lg);
+  }
+}
+@utility shadow-xl {
+  &:where(.dark .shadow-xl) {
+    --tw-shadow: var(--shadow-xl);
+  }
+}
+@utility shadow-card {
+  &:where(.dark .shadow-card) {
+    --tw-shadow: var(--shadow-card);
+  }
+}
+@utility shadow-dropdown {
+  &:where(.dark .shadow-dropdown) {
+    --tw-shadow: var(--shadow-dropdown);
+  }
+}
+@utility shadow-sidebar {
+  &:where(.dark .shadow-sidebar) {
+    --tw-shadow: var(--shadow-sidebar);
+  }
+}
+@utility shadow-waitlist {
+  &:where(.dark .shadow-waitlist) {
+    --tw-shadow: var(--shadow-waitlist);
+  }
+}
+
+.edif-bui{font-family:"Nunito Sans",system-ui,sans-serif;color:var(--color-text-primary)}
+.edif-bui *,.edif-bui *::before,.edif-bui *::after{box-sizing:border-box}
+.edif-bui p,.edif-bui dl,.edif-bui dd{margin:0}
+.edif-bui button{font:inherit}
+
+.edif-bui{--sheet:#fff;--sheet-line:#E4E9F2;--ink:#14203F;--ink-2:#5B6785;--ink-3:#8A94AD;--navy-t:#1E3570;--hair:#EDF0F6;--chip:#F3F6FB}
+.edif-bui.dark{--sheet:#131B33;--sheet-line:#26335A;--ink:#E8ECF6;--ink-2:#A8B3CF;--ink-3:#7F8BAA;--navy-t:#9DBDF0;--hair:#222E52;--chip:#1B2646}
+@keyframes edif-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.edif-rise{animation:edif-rise .55s cubic-bezier(.22,1,.36,1) both}
+.edif-board > :nth-child(2){animation-delay:.04s}.edif-board > :nth-child(3){animation-delay:.08s}.edif-board > :nth-child(4){animation-delay:.12s}.edif-board > :nth-child(5){animation-delay:.16s}.edif-board > :nth-child(6){animation-delay:.2s}.edif-board > :nth-child(7){animation-delay:.24s}.edif-board > :nth-child(n+8){animation-delay:.28s}
+.edif-board__split > .edif-bui:nth-child(2){animation-delay:.08s}
+@media (prefers-reduced-motion:reduce){.edif-rise{animation:none}}
+
+.edif-bui h3,.edif-bui [class*="text-title"]{font-family:"Raleway","Nunito Sans",system-ui,sans-serif}
