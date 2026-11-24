@@ -1080,3 +1080,6 @@ html[data-theme='dark'] .edif-board .edif-tl__i::before { background: var(--edif
 .edif-board .edif-dash__hero h2 { font-size: clamp(1.4rem, 2vw, 1.75rem); margin: 4px 0 2px; }
 .edif-board .edif-dash__hero p { font-size: 0.95rem; }
 .edif-board .edif-dash__am { margin: 0 0 4px !important; font-size: 0.9rem; }
+
+.edif-bell__list button { white-space: normal; text-align: left; align-items: flex-start; }
+.edif-bell__list button .edif-bell__body, .edif-bell__list a .edif-bell__body { white-space: normal; text-overflow: clip; overflow-wrap: anywhere; }
