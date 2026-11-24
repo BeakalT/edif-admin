@@ -88,18 +88,16 @@ export default async function Dashboard(props: any) {
   const rows: { href: string; label: string; count: number; detail: string; tone: string; icon: string }[] = []
   if (inReview.length) rows.push({ href: adminUrl(`/collections/${inReview[0].slug}/${inReview[0].id}`), label: 'Waiting for review', count: inReview.length, detail: inReview[0].title, tone: 'blue', icon: 'review' })
   if (changes.length) rows.push({ href: adminUrl(`/collections/${changes[0].slug}/${changes[0].id}`), label: 'Changes requested', count: changes.length, detail: changes[0].note || changes[0].title, tone: 'amber', icon: 'changes' })
-  if (staffOnly && (msgs as any).totalDocs) rows.push({ href: adminUrl('/collections/messages'), label: 'New messages', count: (msgs as any).totalDocs, detail: 'Unread contact messages', tone: 'green', icon: 'inbox' })
+  if (staffOnly && (msgs as any).totalDocs) rows.push({ href: adminUrl('/collections/messages'), label: 'New messages', count: (msgs as any).totalDocs, detail: 'Unread', tone: 'green', icon: 'inbox' })
   if (seo.length) rows.push({ href: seo[0].link, label: 'Search descriptions', count: seo.length, detail: seo[0].text, tone: 'gold', icon: 'search' })
-  if (jobs.docs.length) rows.push({ href: adminUrl('/collections/pages'), label: 'Scheduled', count: jobs.docs.length, detail: 'Pages set to publish or unpublish', tone: 'violet', icon: 'calendar' })
-  if (['admin', 'auditor'].includes(role) && (failed as any).totalDocs) rows.push({ href: adminUrl('/collections/audit-log'), label: 'Security, last 24 hours', count: (failed as any).totalDocs, detail: 'Sign-ins, lockouts, and exports', tone: 'red', icon: 'shield' })
+  if (jobs.docs.length) rows.push({ href: adminUrl('/collections/pages'), label: 'Scheduled', count: jobs.docs.length, detail: 'Publish or unpublish', tone: 'violet', icon: 'calendar' })
+  if (['admin', 'auditor'].includes(role) && (failed as any).totalDocs) rows.push({ href: adminUrl('/collections/audit-log'), label: 'Security, last 24 hours', count: (failed as any).totalDocs, detail: 'Sign-ins, lockouts, exports', tone: 'red', icon: 'shield' })
   if (role === 'admin' && (noTotp as any).totalDocs) rows.push({ href: adminUrl('/collections/users'), label: 'Two-factor not set up', count: (noTotp as any).totalDocs, detail: `Of ${(noTotp as any).all} accounts`, tone: 'violet', icon: 'lock' })
   if (role === 'admin' && backup.startsWith('No backup')) rows.push({ href: adminUrl('/collections/audit-log'), label: 'Backup', count: 1, detail: 'No backup recorded yet', tone: 'amber', icon: 'db' })
   const attention = (featured ? 1 : 0) + rows.length
-  const lead = attention ? `${attention} ${attention === 1 ? 'thing needs' : 'things need'} your attention today.` : canEdit ? 'Nothing is waiting for you. A good day to improve a page.' : 'Nothing is waiting for you.'
+  const lead = attention ? `${attention} ${attention === 1 ? 'item needs' : 'items need'} attention.` : 'Nothing waiting.'
   const extra: string[] = []
-  if (featured) extra.push(`Your ${featured.kind.toLowerCase()} “${featured.title}” closes ${daysLeft(featured.at)}.`)
-  if (['admin', 'publisher', 'auditor'].includes(role) && total > 0) extra.push(`Your site had ${total} ${total === 1 ? 'visit' : 'visits'} this week${delta !== null && delta !== 0 ? `, ${delta > 0 ? 'up' : 'down'} ${Math.abs(delta)}% on last week` : ''}.`)
-  if (seo.length) extra.push(`${seo.length} ${seo.length === 1 ? 'page needs' : 'pages need'} a search fix.`)
+  if (featured) extra.push(`${featured.kind} “${featured.title}” closes ${daysLeft(featured.at)}.`)
   const summary = [lead, ...extra].join(' ')
   const activity = groupActivity((recent as any).docs).filter((i) => i.action !== 'login' && i.action !== 'logout' && !/correct password/i.test(i.text))
 
@@ -123,7 +121,7 @@ export default async function Dashboard(props: any) {
     ...(calT as any[]).filter((x) => x.closingDate).map((x) => ({ date: dk(x.closingDate), kind: 'close' as const, label: 'Tender closes', title: String(x.title), href: adminUrl(`/collections/tenders/${x.id}`) })),
     ...(calV as any[]).filter((x) => x.closingDate).map((x) => ({ date: dk(x.closingDate), kind: 'close' as const, label: 'Vacancy closes', title: String(x.title), href: adminUrl(`/collections/vacancies/${x.id}`) })),
     ...(calE as any[]).filter((x) => x.startsAt).map((x) => ({ date: dk(x.startsAt), kind: 'event' as const, label: 'Event', title: String(x.title), href: adminUrl(`/collections/events/${x.id}`), time: tm(x.startsAt) })),
-    ...(jobs.docs as any[]).filter((j) => j.waitUntil).map((j) => ({ date: dk(j.waitUntil), kind: 'publish' as const, label: 'Scheduled to publish', title: 'A page or article goes live', href: adminUrl('/collections/pages') })),
+    ...(jobs.docs as any[]).filter((j) => j.waitUntil).map((j) => ({ date: dk(j.waitUntil), kind: 'publish' as const, label: 'Scheduled to publish', title: 'Scheduled publish', href: adminUrl('/collections/pages') })),
   ]
   const todayKey = dk(new Date(nowMs()).toISOString())
   const tally = (prefix: string) => { const m: Record<string, number> = {}; for (const d of days60.slice(-7)) for (const [p, n] of Object.entries(d.paths)) if (p.startsWith(prefix)) m[p] = (m[p] || 0) + n; const top = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; return top ? decodeURIComponent(top[0].replace(prefix, '').split('/')[0]).replace(/-/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) : undefined }
@@ -131,16 +129,16 @@ export default async function Dashboard(props: any) {
     wins: content.reduce((n, c) => n + c.wk, 0),
     topNews: hasHealth ? tally('/news/') : undefined,
     topPub: hasHealth ? tally('/publications/') : undefined,
-    backup: role === 'admin' ? { text: backup.startsWith('No backup') ? 'No backup recorded yet. Worth checking.' : `Last backup: ${backup.replace(/^edif-[^ ]+ /, '').replace(/[()]/g, '')}.${/ days/.test(backup) ? ' That is a while, worth checking.' : ' All good.'}`, ok: !backup.startsWith('No backup') && !/ days/.test(backup) } : undefined,
+    backup: role === 'admin' ? { text: backup.startsWith('No backup') ? 'No backup recorded.' : `Last backup ${backup.replace(/^edif-[^ ]+ /, '').replace(/[()]/g, '')}.`, ok: !backup.startsWith('No backup') && !/ days/.test(backup) } : undefined,
   }
   const dayMon = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Africa/Addis_Ababa' })
   const quick: Quick[] = [
     ...(canEdit ? [
-      { href: adminUrl('/collections/pages/create'), title: 'New page', desc: 'Start a page from scratch', icon: 'page' },
-      { href: adminUrl('/collections/news/create'), title: 'News article', desc: 'Share an update with the public', icon: 'news' },
-      { href: adminUrl('/collections/media/create'), title: 'Upload a file', desc: 'Images, reports and documents', icon: 'media' },
+      { href: adminUrl('/collections/pages/create'), title: 'New page', desc: 'Create a page', icon: 'page' },
+      { href: adminUrl('/collections/news/create'), title: 'News article', desc: 'Publish an update', icon: 'news' },
+      { href: adminUrl('/collections/media/create'), title: 'Upload a file', desc: 'Images, reports, documents', icon: 'media' },
     ] as Quick[] : []),
-    { href: '/', title: 'View the website', desc: 'See what the public sees', icon: 'web', external: true },
+    { href: '/', title: 'View the website', desc: 'Open the public site', icon: 'web', external: true },
   ]
   const closingItems = closing.slice(0, 5).map((c) => ({ kind: c.kind, title: c.title, href: c.href, when: dayMon(c.at), days: Math.max(0, Math.ceil((new Date(c.at).getTime() - nowMs()) / 864e5)) }))
   const pagesRow = content.find((c) => c.slug === 'pages')
@@ -161,11 +159,11 @@ export default async function Dashboard(props: any) {
   const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
   const dashStats: DashStat[] = [
     ...(canEdit ? [
-      { label: 'Published', value: String(published), note: 'pieces of content are live on the website.' },
-      { label: 'Drafts', value: String(drafts), note: drafts ? `${plural(drafts, 'item is', 'items are')} still being written.` : 'Nothing half-finished right now.' },
+      { label: 'Published', value: String(published), note: 'Live on the site' },
+      { label: 'Drafts', value: String(drafts), note: drafts ? 'Being written' : 'None' },
     ] : []),
-    { label: 'In review', value: String(inReview.length), note: inReview.length ? `${plural(inReview.length, 'item is', 'items are')} waiting for a reviewer.` : 'Nothing is waiting for a reviewer.', href: inReview[0] ? adminUrl(`/collections/${inReview[0].slug}/${inReview[0].id}`) : undefined },
-    ...(hasHealth ? [{ label: 'Visits this week', value: String(total), note: delta === null ? 'Not enough history yet to compare.' : delta === 0 ? 'About the same as last week.' : `${delta > 0 ? 'Up' : 'Down'} ${Math.abs(delta)}% on last week.` }] : []),
+    { label: 'In review', value: String(inReview.length), note: inReview.length ? 'Awaiting review' : 'None', href: inReview[0] ? adminUrl(`/collections/${inReview[0].slug}/${inReview[0].id}`) : undefined },
+    ...(hasHealth ? [{ label: 'Visits this week', value: String(total), note: delta === null ? 'No earlier week to compare' : delta === 0 ? 'Same as last week' : `${delta > 0 ? 'Up' : 'Down'} ${Math.abs(delta)}% on last week` }] : []),
   ]
 
   return (
@@ -213,7 +211,7 @@ export default async function Dashboard(props: any) {
               </a>
             ))}
           </div>
-        ) : <p className="edif-board__clear">Nothing is waiting.</p>}
+        ) : <p className="edif-board__clear">Nothing to do.</p>}
       </section>
 
       <div className="edif-board__split">

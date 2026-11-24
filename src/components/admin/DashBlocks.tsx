@@ -14,7 +14,7 @@ export function QuickActions({ items }: { items: Quick[] }) {
   if (!items.length) return null
   return (
     <section className="edif-bui flex flex-wrap items-center gap-2.5" aria-label="Quick actions">
-      <span className="me-1 text-[13px] text-[var(--ink-2)]">Start something:</span>
+      <span className="me-1 text-[13px] text-[var(--ink-2)]">Create:</span>
       {items.map((q, i) => (
         <a key={q.title} href={q.href} title={q.desc} {...(q.external ? { target: '_blank', rel: 'noreferrer' } : {})}
           className={cx('rounded-full px-4 py-2 text-[14px] font-semibold no-underline outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#2875BA]', i === 0 ? 'bg-[#1E3570] text-white hover:bg-[#162858]' : 'border border-[var(--sheet-line)] bg-[var(--sheet)] text-[var(--navy-t)] hover:bg-[var(--chip)]')}>
@@ -43,7 +43,7 @@ export function ClosingSoon({ items }: { items: Closing[] }) {
             </li>
           ))}
         </ul>
-      ) : <p className="mt-3 text-[14px] text-[var(--ink-2)]">No tenders or vacancies are closing soon. Nothing to chase today.</p>}
+      ) : <p className="mt-3 text-[14px] text-[var(--ink-2)]">No closing dates in the next 14 days.</p>}
     </section>
   )
 }
@@ -66,7 +66,7 @@ export function HealthRings({ seo, security }: Health) {
   if (!seo && !security) return null
   return (
     <section className={SHEET}>
-      <h3 className={H}><Dash />Keeping things in order</h3>
+      <h3 className={H}><Dash />Site health</h3>
       <div className="mt-4 flex flex-col gap-5">
         {seo && (() => { const done = Math.max(0, seo.total - seo.missing); const pct = seo.total ? Math.round((done / seo.total) * 100) : 100
           return (
@@ -74,8 +74,8 @@ export function HealthRings({ seo, security }: Health) {
               <Ring pct={pct} color="#C29B38">{pct}%</Ring>
               <div className="min-w-0 text-[14px] leading-snug text-[var(--ink-2)]">
                 <p className="text-[15px] font-semibold text-[var(--ink)]">Search descriptions</p>
-                <p>{seo.missing === 0 ? 'Every page has one.' : `${done} of ${seo.total} pages have a short description. ${seo.missing} still need one so people can find them.`}</p>
-                {seo.missing > 0 && <a href={seo.href} className="mt-1 inline-block font-semibold text-[var(--navy-t)]">Do the next one →</a>}
+                <p>{seo.missing === 0 ? 'All pages have one.' : `${done} of ${seo.total} pages have one. ${seo.missing} missing.`}</p>
+                {seo.missing > 0 && <a href={seo.href} className="mt-1 inline-block font-semibold text-[var(--navy-t)]">Fix next →</a>}
               </div>
             </div>
           ) })()}
@@ -85,8 +85,8 @@ export function HealthRings({ seo, security }: Health) {
               <Ring pct={pct} color="#1E3570">{done}/{security.total}</Ring>
               <div className="min-w-0 text-[14px] leading-snug text-[var(--ink-2)]">
                 <p className="text-[15px] font-semibold text-[var(--ink)]">Two-factor sign-in</p>
-                <p>{security.without === 0 ? 'Everyone on the team has it on.' : `${security.without} ${security.without === 1 ? 'person has' : 'people have'} not set it up yet. A quick nudge would help.`}</p>
-                {security.without > 0 && <a href={security.href} className="mt-1 inline-block font-semibold text-[var(--navy-t)]">See who →</a>}
+                <p>{security.without === 0 ? 'Enabled for everyone.' : `${security.without} not set up.`}</p>
+                {security.without > 0 && <a href={security.href} className="mt-1 inline-block font-semibold text-[var(--navy-t)]">View users →</a>}
               </div>
             </div>
           ) })()}
@@ -98,16 +98,16 @@ export function HealthRings({ seo, security }: Health) {
 export type Pipe = { draft: number; review: number; changes: number; published: number; hrefs: { review?: string } }
 export function Pipeline({ p }: { p: Pipe }) {
   const steps = [
-    { n: p.draft, one: 'draft', many: 'drafts', tail: 'being written' },
-    { n: p.review, one: 'item', many: 'items', tail: p.changes ? `in review, ${p.changes} sent back` : 'in review', href: p.hrefs.review },
-    { n: p.published, one: 'item', many: 'items', tail: 'live on the site' },
+    { n: p.draft, label: p.draft === 1 ? 'Draft' : 'Drafts' },
+    { n: p.review, label: p.changes ? `In review, ${p.changes} sent back` : 'In review', href: p.hrefs.review },
+    { n: p.published, label: 'Live' },
   ]
   return (
     <section className={SHEET}>
-      <h3 className={H}><Dash />Where your content stands</h3>
+      <h3 className={H}><Dash />Content pipeline</h3>
       <ol className="mt-4 grid grid-cols-1 items-stretch gap-0 sm:grid-cols-3">
         {steps.map((s, i) => {
-          const body = (<><span className="block font-[family-name:var(--edif-display,inherit)] text-[2rem] leading-none font-extrabold tabular-nums text-[var(--navy-t)]">{s.n}</span><span className="mt-1.5 block text-[14px] text-[var(--ink-2)]">{s.n === 1 ? s.one : s.many} {s.tail}</span></>)
+          const body = (<><span className="block font-[family-name:var(--edif-display,inherit)] text-[2rem] leading-none font-extrabold tabular-nums text-[var(--navy-t)]">{s.n}</span><span className="mt-1.5 block text-[14px] text-[var(--ink-2)]">{s.label}</span></>)
           return <li key={i} className={cx('px-5 py-1', i > 0 && 'sm:border-s sm:border-[var(--hair)]', i === 0 && 'sm:ps-0')}>{s.href ? <a href={s.href} className="block no-underline">{body}</a> : body}</li>
         })}
       </ol>
@@ -119,11 +119,11 @@ export type Act = { id: string | number; text: string; ago: string; kind: 'secur
 export function Activity({ items, href }: { items: Act[]; href: string }) {
   const [tab, setTab] = useState<'all' | 'security' | 'edit'>('all')
   const shown = items.filter((i) => tab === 'all' || i.kind === tab).slice(0, 7)
-  const tabs: ['all' | 'security' | 'edit', string][] = [['all', 'Everything'], ['edit', 'Edits'], ['security', 'Sign-ins and security']]
+  const tabs: ['all' | 'security' | 'edit', string][] = [['all', 'Everything'], ['edit', 'Edits'], ['security', 'Security']]
   return (
     <section className={SHEET}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className={H}><Dash />Lately</h3>
+        <h3 className={H}><Dash />Recent activity</h3>
         <div className="flex gap-1" role="group" aria-label="Filter activity">
           {tabs.map(([k, l]) => <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)} className={cx('rounded-full px-3 py-1 text-[13px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[#2875BA]', tab === k ? 'bg-[#1E3570] text-white' : 'text-[var(--ink-2)] hover:bg-[var(--chip)]')}>{l}</button>)}
         </div>
@@ -136,9 +136,9 @@ export function Activity({ items, href }: { items: Act[]; href: string }) {
             <span className="shrink-0 text-[13px] text-[var(--ink-3)]">{a.ago}</span>
           </li>
         ))}
-        {!shown.length && <li className="py-3 text-[14px] text-[var(--ink-2)]">Nothing here yet.</li>}
+        {!shown.length && <li className="py-3 text-[14px] text-[var(--ink-2)]">No activity.</li>}
       </ul>
-      <a href={href} className="mt-2 inline-block text-[14px] font-semibold text-[var(--navy-t)]">Open the full log →</a>
+      <a href={href} className="mt-2 inline-block text-[14px] font-semibold text-[var(--navy-t)]">View audit log →</a>
     </section>
   )
 }

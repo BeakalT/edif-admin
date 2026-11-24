@@ -36,17 +36,17 @@ export type ResumeItem = { title: string; kind: string; href: string; ago: strin
 export function Resume({ items }: { items: ResumeItem[] }) {
   return (
     <section className={SHEET}>
-      <h3 className={H}><Dash />Pick up where you left off</h3>
+      <h3 className={H}><Dash />Drafts</h3>
       {items.length ? (
         <ul className="mt-3 divide-y divide-[var(--hair)]">
           {items.map((r) => (
             <li key={r.href} className="flex items-center justify-between gap-3 py-3">
-              <span className="min-w-0"><span className="block truncate text-[15px] font-semibold text-[var(--ink)]">{r.title}</span><span className="text-[13px] text-[var(--ink-2)]">{r.kind} draft, edited {r.ago}</span></span>
-              <a href={r.href} className="shrink-0 rounded-full border border-[var(--sheet-line)] px-3.5 py-1.5 text-[13px] font-semibold text-[var(--navy-t)] no-underline hover:bg-[var(--chip)]">Continue</a>
+              <span className="min-w-0"><span className="block truncate text-[15px] font-semibold text-[var(--ink)]">{r.title}</span><span className="text-[13px] text-[var(--ink-2)]">{r.kind}, edited {r.ago}</span></span>
+              <a href={r.href} className="shrink-0 rounded-full border border-[var(--sheet-line)] px-3.5 py-1.5 text-[13px] font-semibold text-[var(--navy-t)] no-underline hover:bg-[var(--chip)]">Open</a>
             </li>
           ))}
         </ul>
-      ) : <Emblem text="No unfinished drafts. Everything you started has been published." />}
+      ) : <Emblem text="No drafts in progress." />}
     </section>
   )
 }
@@ -56,8 +56,8 @@ export function Inbox({ items, total, href }: { items: InboxItem[]; total: numbe
   return (
     <section className={SHEET}>
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className={H}><Dash />From the public</h3>
-        {total > 0 && <a href={href} className="text-[13px] font-semibold text-[var(--navy-t)] no-underline">{total} new, open inbox →</a>}
+        <h3 className={H}><Dash />Messages</h3>
+        {total > 0 && <a href={href} className="text-[13px] font-semibold text-[var(--navy-t)] no-underline">{total} new · View all →</a>}
       </div>
       {items.length ? (
         <ul className="mt-3 divide-y divide-[var(--hair)]">
@@ -73,7 +73,7 @@ export function Inbox({ items, total, href }: { items: InboxItem[]; total: numbe
             </li>
           ))}
         </ul>
-      ) : <Emblem text="No new messages. The inbox is clear." />}
+      ) : <Emblem text="No new messages." />}
     </section>
   )
 }
@@ -159,7 +159,7 @@ export function DashCalendar({ events, todayKey }: { events: CalEvent[]; todayKe
                 </li>
               ))}
             </ul>
-          ) : <p className="mt-3 text-[14px] text-[var(--ink-2)]">{monthCount ? 'Nothing on this day.' : 'A quiet month: no closing dates, events or scheduled publishes.'}</p>}
+          ) : <p className="mt-3 text-[14px] text-[var(--ink-2)]">{monthCount ? 'No items on this day.' : 'No items this month.'}</p>}
         </div>
       </div>
     </section>
@@ -169,9 +169,9 @@ export function DashCalendar({ events, todayKey }: { events: CalEvent[]; todayKe
 export type Pulse = { wins: number; topNews?: string; topPub?: string; backup?: { text: string; ok: boolean } }
 export function PulseNotes({ p }: { p: Pulse }) {
   const notes: { k: string; v: React.ReactNode; tone?: 'ok' | 'warn' }[] = []
-  notes.push({ k: 'Your week', v: p.wins > 0 ? `${p.wins} ${p.wins === 1 ? 'item was' : 'items were'} published or updated on the site.` : 'Nothing new went live this week yet.' })
-  if (p.topNews || p.topPub) notes.push({ k: 'Most read', v: [p.topNews && `News: ${p.topNews}`, p.topPub && `Publication: ${p.topPub}`].filter(Boolean).join('. ') + '.' })
-  if (p.backup) notes.push({ k: 'Safety net', v: p.backup.text, tone: p.backup.ok ? 'ok' : 'warn' })
+  notes.push({ k: 'This week', v: p.wins > 0 ? `${p.wins} published or updated.` : 'Nothing published yet.' })
+  if (p.topNews || p.topPub) notes.push({ k: 'Most read', v: [p.topNews && `News: ${p.topNews}`, p.topPub && `Publication: ${p.topPub}`].filter(Boolean).join(' · ') })
+  if (p.backup) notes.push({ k: 'Backup', v: p.backup.text, tone: p.backup.ok ? 'ok' : 'warn' })
   return (
     <section className={cx(SHEET, '!py-4')}>
       <dl className="grid gap-4 md:grid-cols-3 md:gap-0">
