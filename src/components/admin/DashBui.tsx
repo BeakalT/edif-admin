@@ -87,7 +87,7 @@ function WeeklyBars({ cur, prev }: { cur: DayStat[]; prev: DayStat[] }) {
     <section className="rounded-[18px] border border-[var(--sheet-line)] bg-[var(--sheet)] p-5 shadow-[0_10px_28px_rgba(16,32,64,.07)]" aria-label="Visits by week">
       <div className="flex items-center justify-between gap-3">
         <h3 className="flex items-center gap-2.5 text-[15px] font-bold text-[var(--navy-t)]"><span className="h-0.5 w-3.5 rounded bg-[#C29B38]" aria-hidden />Visits per week</h3>
-        <p className="flex gap-3 text-[12px] text-[var(--ink-2)]"><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-sm bg-[#C29B38]" />Before</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-sm bg-[#1E3570]" />Latest</span></p>
+        <p className="flex gap-3 text-[12px] text-[var(--ink-2)]"><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-sm bg-[#C29B38]" />Previous</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-sm bg-[#1E3570]" />Current</span></p>
       </div>
       <div className="mt-3 h-52">
         <ResponsiveContainer width="100%" height="100%">

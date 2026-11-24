@@ -43,7 +43,7 @@ export const TABS: { label: string; actions?: string[] }[] = [
 
 /** The same entry split into parts, so the dashboard can set the person and the object in bold instead of one long sentence. */
 export function describe(e: Entry): { who: string; verb: string; what: string; detail: string } {
-  const who = e.actor || 'System'
+  const who = e.actor ? e.actor.charAt(0).toUpperCase() + e.actor.slice(1) : 'System'
   const area = AREA[e.resource || ''] || e.resource || 'item'
   const what = e.documentTitle ? `${area} “${e.documentTitle}”` : area
   const keys = Object.keys(e.changes || {}).filter((k) => !NOISE.has(k))

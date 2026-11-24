@@ -24,7 +24,7 @@ const formatMoney = (value: number) =>
   value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 function describeDelta(current: number, previous: number) {
-  if (previous === 0) return { label: "New", color: "neutral" as const };
+  if (previous === 0) return { label: "No earlier data", color: "neutral" as const };
   const change = ((current - previous) / previous) * 100;
   const rounded = Math.round(change * 10) / 10;
   if (rounded === 0) return { label: "0%", color: "neutral" as const };
