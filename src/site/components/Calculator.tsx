@@ -54,21 +54,19 @@ export default function Calculator() {
     const g = groups.get(r.i) || { t: 0, n: 0 }
     g.t += r.b; g.n++; groups.set(r.i, g)
   })
-  let prot = 0, over = 0
+  let prot = 0
   const list = [...groups].map(([k, g]) => {
     const p = Math.min(g.t, LIMIT), o = Math.max(0, g.t - LIMIT)
-    prot += p; over += o
-    const scale = Math.max(LIMIT * 1.25, g.t)
-    return { k, g, p, o, pw: (p / scale) * 100, ow: (o / scale) * 100, lim: (LIMIT / scale) * 100 }
+    prot += p
+    return { k, g, p, o, pw: (p / LIMIT) * 100 }
   })
-  const total = prot + over
   const flash = (msg: string) => { setNote(msg); clearTimeout(noteT.current); noteT.current = setTimeout(() => setNote(''), 3500) }
   const copy = async (text: string, ok: string) => {
     try { await navigator.clipboard.writeText(text); flash(ok) } catch { flash('Could not copy. You can select the text and copy it instead.') }
   }
   const copyResult = () => {
-    const lines = list.map(({ k, g, p, o }) => `${k}: Birr ${fmt(g.t)} (protected Birr ${fmt(p)}${o ? `, not protected Birr ${fmt(o)}` : ''})`)
-    return copy(`EDIF coverage estimate\n${lines.join('\n')}\nProtected: Birr ${fmt(prot)}. Not protected: Birr ${fmt(over)}.\nAn estimate only: the Fund confirms each depositor's amount at payout.`, 'Result copied')
+    const lines = list.map(({ k, g, p }) => `${k}: balance Birr ${fmt(g.t)}, protected Birr ${fmt(p)}`)
+    return copy(`EDIF coverage estimate\n${lines.join('\n')}\nTotal protected: Birr ${fmt(prot)}.\nAn estimate only: the Fund confirms each depositor's amount at payout.`, 'Result copied')
   }
   const copyLink = () => {
     const data = rows.filter((r) => r.i && r.b > 0).map((r) => [r.i, r.b])
@@ -131,15 +129,11 @@ export default function Calculator() {
                 <b className="num">Birr <Tween value={prot} /></b>
                 <small>{groups.size > 1 ? `Across ${groups.size} institutions` : 'At 1 institution'}</small>
               </div>
-              <div className={'t-side' + (over ? ' warn' : '')}>
-                <span className="t-k">Not protected</span>
-                <b className="num">Birr <Tween value={over} /></b>
-                <small>{over ? 'Above the limit' : 'Nothing above the limit'}</small>
+              <div className="t-side">
+                <span className="t-k">Limit</span>
+                <b className="num">Birr {fmt(LIMIT)}</b>
+                <small>Per depositor, per institution</small>
               </div>
-            </div>
-            <div className="split" aria-hidden="true">
-              <i className="split-ok" style={{ width: (total ? (prot / total) * 100 : 0) + '%' }} />
-              <i className="split-over" style={{ width: (total ? (over / total) * 100 : 0) + '%' }} />
             </div>
           </>
         ) : (
@@ -150,18 +144,18 @@ export default function Calculator() {
           </div>
         )}
         {!groups.size && <p className="res-hint">{pending ? 'Choose the institution for each account to see your result.' : 'Enter a balance to see how much is protected.'}</p>}
-        {example && list.length > 1 && <p className="ex-explain">Two accounts at the same bank are added together (Birr {fmt(list[0].g.t)}), so Birr {fmt(list[0].o)} is above the limit. The account at the second bank is protected separately.</p>}
+        {example && list.length > 1 && <p className="ex-explain">Two accounts at the same bank are added together (Birr {fmt(list[0].g.t)}), and the Fund protects up to Birr {fmt(LIMIT)} of that. The account at the second bank is protected separately.</p>}
         {groups.size > 0 && (
           <ul className="groups">
-            {list.map(({ k, g, p, o, pw, ow, lim }, i) => (
-              <li key={k} className={o ? 'is-over' : 'is-ok'} style={{ ['--i' as string]: i }}>
+            {list.map(({ k, g, p, o, pw }, i) => (
+              <li key={k} className="is-ok" style={{ ['--i' as string]: i }}>
                 <div className="g-top"><strong>{k}</strong><span className="num">Birr {fmt(g.t)}</span></div>
                 <small>{g.n > 1 ? `${g.n} accounts added together` : '1 account'}</small>
                 <span className="meter" aria-hidden="true">
-                  <i className="ok" style={{ width: pw + '%' }} /><i className="over" style={{ left: pw + '%', width: ow + '%' }} /><i className="lim" style={{ left: lim + '%' }}><b>100,000</b></i>
+                  <i className="ok" style={{ width: pw + '%' }} /><i className="lim" style={{ left: '100%' }}><b>100,000</b></i>
                 </span>
                 <p className="g-status">
-                  {o ? <><span className="warn-t">Birr {fmt(o)} above the limit</span> · Birr {fmt(p)} protected</> : <span className="ok-t">Fully protected</span>}
+                  <span className="ok-t">Birr {fmt(p)} protected{o ? ` (the limit per institution)` : ''}</span>
                 </p>
               </li>
             ))}
