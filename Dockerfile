@@ -6,7 +6,7 @@
 # Then, once the new web container is healthy and before it gets public traffic:
 #   BASE_URL=... REVALIDATE_TOKEN=... node scripts/post-deploy.mjs
 
-FROM node:22.23.4-alpine AS base
+FROM node:25.9.0-alpine AS base
 RUN apk add --no-cache libc6-compat tini
 WORKDIR /app
 
